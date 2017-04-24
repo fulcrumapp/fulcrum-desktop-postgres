@@ -1,0 +1,11 @@
+{
+  "name": "fulcrum-sync-postgres",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "fulcrum-schema": "fulcrumapp/fulcrum-schema#v2",
+    "fulcrum-sync-plugin": "^1.0.1",
+    "pg": "^6.1.5"
+  }
+}
