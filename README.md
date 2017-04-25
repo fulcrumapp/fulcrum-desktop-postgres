@@ -20,3 +20,9 @@ Sync Fulcrum data to PostgreSQL.
 ```
 ./run task postgres --org 'Fulcrum Account Name'
 ```
+
+### Keep it up to date
+
+```
+./run sync --org 'Fulcrum Account Name'
+```
