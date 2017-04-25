@@ -1,6 +1,6 @@
 import Schema from 'fulcrum-schema/dist/schema';
 import sqldiff from 'sqldiff';
-import V2 from 'fulcrum-schema/dist/schemas/postgres-query-v2';
+import PGSchema from './postgres-schema';
 
 const {SchemaDiffer, Postgres} = sqldiff;
 
@@ -10,11 +10,11 @@ export default class PostgresSchema {
     let newSchema = null;
 
     if (oldForm) {
-      oldSchema = new Schema(oldForm, V2, null);
+      oldSchema = new Schema(oldForm, PGSchema, null);
     }
 
     if (newForm) {
-      newSchema = new Schema(newForm, V2, null);
+      newSchema = new Schema(newForm, PGSchema, null);
     }
 
     const differ = new SchemaDiffer(oldSchema, newSchema);

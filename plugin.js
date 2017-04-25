@@ -134,13 +134,33 @@ export default class PostgresPlugin extends Plugin {
 
     const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm);
 
-    await this.run(format('DROP VIEW IF EXISTS %s', this.pgdb.ident(form.name)));
+    await this.dropFriendlyView(form, null);
+
+    for (const repeatable of form.elementsOfType('Repeatable')) {
+      await this.dropFriendlyView(form, repeatable);
+    }
 
     await this.run(statements.join('\n'));
 
+    await this.createFriendlyView(form, null);
+
+    for (const repeatable of form.elementsOfType('Repeatable')) {
+      await this.createFriendlyView(form, repeatable);
+    }
+  }
+
+  async dropFriendlyView(form, repeatable) {
+    const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
+
+    await this.run(format('DROP VIEW IF EXISTS %s', this.pgdb.ident(viewName)));
+  }
+
+  async createFriendlyView(form, repeatable) {
+    const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
+
     await this.run(format('CREATE VIEW %s AS SELECT * FROM %s_view_full',
-                          this.pgdb.ident(form.name),
-                          this.app.api.PostgresRecordValues.tableNameWithForm(form)));
+                          this.pgdb.ident(viewName),
+                          this.app.api.PostgresRecordValues.tableNameWithForm(form, repeatable)));
   }
 
   formVersion = (form) => {
