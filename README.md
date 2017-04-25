@@ -18,5 +18,5 @@ Sync Fulcrum data to PostgreSQL.
 ### Sync a Form
 
 ```
-./run task carto --org 'Fulcrum Account Name' --form 'Form Name' --apikey 'carto api key' --user 'carto user name'
+./run task postgres --org 'Fulcrum Account Name'
 ```
