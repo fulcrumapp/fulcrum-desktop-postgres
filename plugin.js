@@ -54,9 +54,9 @@ export default class PostgresPlugin extends Plugin {
     // app.on('choice_list:save', this.onChoiceListSave);
     // app.on('classification_set:save', this.onClassificationSetSave);
     // app.on('project:save', this.onProjectSave);
-    // app.on('form:save', this.onFormSave);
-    // app.on('record:save', this.onRecordSave);
-    // app.on('record:delete', this.onRecordDelete);
+    app.on('form:save', this.onFormSave);
+    app.on('record:save', this.onRecordSave);
+    app.on('record:delete', this.onRecordDelete);
 
     // Fetch all the existing tables on startup. This allows us to special case the
     // creation of new tables even when the form isn't version 1. If the table doesn't
