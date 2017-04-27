@@ -1,7 +1,7 @@
-import Plugin from 'fulcrum-sync-plugin';
 import pg from 'pg';
-import {format} from 'util';
+import { format } from 'util';
 import PostgresSchema from './schema';
+import { PostgresRecordValues, Postgres } from 'fulcrum';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -11,17 +11,13 @@ const POSTGRES_CONFIG = {
   idleTimeoutMillis: 30000
 };
 
-export default class PostgresPlugin extends Plugin {
-  get enabled() {
-    return false;
-  }
-
-  async runTask({app, yargs}) {
-    this.args = yargs.usage('Usage: postgres --org [org]')
+export default class {
+  async task() {
+    fulcrum.yargs.usage('Usage: postgres --org [org]')
       .demandOption([ 'org' ])
       .argv;
 
-    const account = await app.fetchAccount(this.args.org);
+    const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
     if (account) {
       const forms = await account.findActiveForms({});
@@ -48,15 +44,15 @@ export default class PostgresPlugin extends Plugin {
     }
   }
 
-  async initialize({app}) {
+  async activate() {
     this.pool = new pg.Pool(POSTGRES_CONFIG);
 
-    // app.on('choice_list:save', this.onChoiceListSave);
-    // app.on('classification_set:save', this.onClassificationSetSave);
-    // app.on('project:save', this.onProjectSave);
-    app.on('form:save', this.onFormSave);
-    app.on('record:save', this.onRecordSave);
-    app.on('record:delete', this.onRecordDelete);
+    // fulcrum.on('choice_list:save', this.onChoiceListSave);
+    // fulcrum.on('classification_set:save', this.onClassificationSetSave);
+    // fulcrum.on('project:save', this.onProjectSave);
+    fulcrum.on('form:save', this.onFormSave);
+    fulcrum.on('record:save', this.onRecordSave);
+    fulcrum.on('record:delete', this.onRecordDelete);
 
     // Fetch all the existing tables on startup. This allows us to special case the
     // creation of new tables even when the form isn't version 1. If the table doesn't
@@ -67,7 +63,7 @@ export default class PostgresPlugin extends Plugin {
     this.tableNames = rows.map(o => o.name);
 
     // make a client so we can use it to build SQL statements
-    this.pgdb = new app.api.Postgres({});
+    this.pgdb = new Postgres({});
   }
 
   async dispose() {
@@ -105,7 +101,7 @@ export default class PostgresPlugin extends Plugin {
   }
 
   onRecordDelete = async ({record}) => {
-    const statements = this.app.api.PostgresRecordValues.deleteForRecordStatements(this.pgdb, record, record.form);
+    const statements = PostgresRecordValues.deleteForRecordStatements(this.pgdb, record, record.form);
 
     await this.run(statements.map(o => o.sql).join('\n'));
   }
@@ -120,13 +116,13 @@ export default class PostgresPlugin extends Plugin {
   }
 
   updateRecord = async (record) => {
-    const statements = this.app.api.PostgresRecordValues.updateForRecordStatements(this.pgdb, record);
+    const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record);
 
     await this.run(statements.map(o => o.sql).join('\n'));
   }
 
   updateForm = async (form, account, oldForm, newForm) => {
-    const rootTableName = this.app.api.PostgresRecordValues.tableNameWithForm(form);
+    const rootTableName = PostgresRecordValues.tableNameWithForm(form);
 
     if (this.tableNames.indexOf(rootTableName) === -1) {
       oldForm = null;
@@ -160,7 +156,7 @@ export default class PostgresPlugin extends Plugin {
 
     await this.run(format('CREATE VIEW %s AS SELECT * FROM %s_view_full',
                           this.pgdb.ident(viewName),
-                          this.app.api.PostgresRecordValues.tableNameWithForm(form, repeatable)));
+                          PostgresRecordValues.tableNameWithForm(form, repeatable)));
   }
 
   formVersion = (form) => {
