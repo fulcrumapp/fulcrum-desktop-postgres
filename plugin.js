@@ -12,10 +12,38 @@ const POSTGRES_CONFIG = {
 };
 
 export default class {
-  async task() {
-    fulcrum.yargs.usage('Usage: postgres --org [org]')
-      .demandOption([ 'org' ])
-      .argv;
+  async task(cli) {
+    return cli.command({
+      command: 'postgres',
+      desc: 'run the postgres sync for a specific organization',
+      builder: {
+        pgdatabase: {
+          desc: 'postgresql database name',
+          type: 'string',
+          default: POSTGRES_CONFIG.database
+        },
+        pghost: {
+          desc: 'postgresql server host',
+          type: 'string',
+          default: POSTGRES_CONFIG.host
+        },
+        pgport: {
+          desc: 'postgresql server port',
+          type: 'integer',
+          default: POSTGRES_CONFIG.port
+        },
+        org: {
+          desc: 'organization name',
+          required: true,
+          type: 'string'
+        }
+      },
+      handler: this.runCommand
+    });
+  }
+
+  runCommand = async () => {
+    await this.activate();
 
     const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
@@ -45,7 +73,12 @@ export default class {
   }
 
   async activate() {
-    this.pool = new pg.Pool(POSTGRES_CONFIG);
+    this.pool = new pg.Pool({
+      ...POSTGRES_CONFIG,
+      host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
+      port: fulcrum.args.pgport  || POSTGRES_CONFIG.port,
+      database: fulcrum.args.pgdatabase || POSTGRES_CONFIG.database
+    });
 
     // fulcrum.on('choice_list:save', this.onChoiceListSave);
     // fulcrum.on('classification_set:save', this.onClassificationSetSave);
@@ -66,8 +99,10 @@ export default class {
     this.pgdb = new Postgres({});
   }
 
-  async dispose() {
-    await this.pool.end();
+  async deactivate() {
+    if (this.pool) {
+      await this.pool.end();
+    }
   }
 
   run = (sql) => {
