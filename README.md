@@ -5,7 +5,7 @@ Sync Fulcrum data to PostgreSQL.
 ### Installation
 
 ```sh
-./run install-plugin --git https://github.com/fulcrumapp/fulcrum-sync-postgres
+fulcrum install-plugin --url https://github.com/fulcrumapp/fulcrum-sync-postgres
 ```
 
 ### Sync a Form
@@ -18,11 +18,11 @@ Sync Fulcrum data to PostgreSQL.
 ### Sync a Form
 
 ```
-./run task postgres --org 'Fulcrum Account Name'
+fulcrum postgres --org 'Fulcrum Account Name'
 ```
 
 ### Keep it up to date
 
 ```
-./run sync --org 'Fulcrum Account Name'
+fulcrum sync --org 'Fulcrum Account Name'
 ```
