@@ -294,6 +294,10 @@ babel-plugin-check-es2015-constants@^6.22.0:
   dependencies:
     babel-runtime "^6.22.0"
 
+babel-plugin-fulcrum-sync@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/babel-plugin-fulcrum-sync/-/babel-plugin-fulcrum-sync-1.0.0.tgz#c38087ffcb58833edd16da6e5ac9991410b8d80b"
+
 babel-plugin-syntax-async-functions@^6.8.0:
   version "6.13.0"
   resolved "https://registry.yarnpkg.com/babel-plugin-syntax-async-functions/-/babel-plugin-syntax-async-functions-6.13.0.tgz#cad9cad1191b5ad634bf30ae0872391e0647be95"
@@ -1020,9 +1024,9 @@ fulcrum-schema@fulcrumapp/fulcrum-schema#v2:
     sqldiff "0.0.19"
     underscore "^1.8.3"
 
-fulcrum-sync-plugin@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/fulcrum-sync-plugin/-/fulcrum-sync-plugin-1.2.0.tgz#e334c47787996be920862e6b8dc0f63f95b221ab"
+fulcrum-sync-plugin@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/fulcrum-sync-plugin/-/fulcrum-sync-plugin-1.4.0.tgz#a2bcf23596430a1f982a2d874d6e6ea278654051"
   dependencies:
     babel-cli "^6.24.1"
     babel-core "^6.24.1"
@@ -1406,13 +1410,9 @@ oauth-sign@~0.8.1:
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/oauth-sign/-/oauth-sign-0.8.2.tgz#46a6ab7f0aead8deae9ec0565780b7d4efeb9d43"
 
-object-assign@4.1.0:
+object-assign@4.1.0, object-assign@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.0.tgz#7a3b3d0e98063d43f4c03f2e8ae6cd51a86883a0"
-
-object-assign@^4.1.0:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
 
 object.omit@^2.0.0:
   version "2.0.1"

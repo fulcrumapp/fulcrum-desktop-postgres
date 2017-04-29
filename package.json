@@ -1,14 +1,23 @@
 {
   "name": "fulcrum-sync-postgres",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/plugin.js",
   "license": "MIT",
+  "scripts": {
+    "build": "node_modules/.bin/babel *.js --out-dir dist --source-maps=inline",
+    "watch": "node_modules/.bin/babel *.js --out-dir dist --source-maps=inline --watch",
+    "clean": "rm -rf dist"
+  },
   "dependencies": {
+    "babel-plugin-fulcrum-sync": "^1.0.0",
     "fulcrum-schema": "fulcrumapp/fulcrum-schema#v2",
-    "fulcrum-sync-plugin": "^1.2.0",
-    "pg": "^6.1.5"
+    "pg": "^6.1.5",
+    "fulcrum-sync-plugin": "^1.4.0"
   },
   "babel": {
+    "plugins": [
+      "fulcrum-sync"
+    ],
     "presets": [
       "stage-0",
       [
@@ -20,5 +29,9 @@
         }
       ]
     ]
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-plugin-fulcrum-sync": "^1.0.0"
   }
 }
