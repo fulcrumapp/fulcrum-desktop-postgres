@@ -294,9 +294,9 @@ babel-plugin-check-es2015-constants@^6.22.0:
   dependencies:
     babel-runtime "^6.22.0"
 
-babel-plugin-fulcrum-sync@^1.0.0:
+babel-plugin-fulcrum-desktop@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-fulcrum-sync/-/babel-plugin-fulcrum-sync-1.0.0.tgz#c38087ffcb58833edd16da6e5ac9991410b8d80b"
+  resolved "https://registry.yarnpkg.com/babel-plugin-fulcrum-desktop/-/babel-plugin-fulcrum-desktop-1.0.0.tgz#626d77fffb00ce6634b21b0565181bef4a50d8fd"
 
 babel-plugin-syntax-async-functions@^6.8.0:
   version "6.13.0"
@@ -1016,6 +1016,16 @@ fstream@^1.0.0, fstream@^1.0.10, fstream@^1.0.2:
     mkdirp ">=0.5 0"
     rimraf "2"
 
+fulcrum-desktop-plugin@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/fulcrum-desktop-plugin/-/fulcrum-desktop-plugin-1.4.0.tgz#0d5f0bc77c7e313e04eb1a1671afc99a51cb3b16"
+  dependencies:
+    babel-cli "^6.24.1"
+    babel-core "^6.24.1"
+    babel-eslint "^7.2.3"
+    babel-preset-env "^1.4.0"
+    babel-preset-stage-0 "^6.24.1"
+
 fulcrum-schema@fulcrumapp/fulcrum-schema#v2:
   version "1.14.0"
   resolved "https://codeload.github.com/fulcrumapp/fulcrum-schema/tar.gz/0f03b75583d254828746714d3fd3a5320dc27376"
@@ -1023,16 +1033,6 @@ fulcrum-schema@fulcrumapp/fulcrum-schema#v2:
     babel-polyfill "^6.9.0"
     sqldiff "0.0.19"
     underscore "^1.8.3"
-
-fulcrum-sync-plugin@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/fulcrum-sync-plugin/-/fulcrum-sync-plugin-1.4.0.tgz#a2bcf23596430a1f982a2d874d6e6ea278654051"
-  dependencies:
-    babel-cli "^6.24.1"
-    babel-core "^6.24.1"
-    babel-eslint "^7.2.3"
-    babel-preset-env "^1.4.0"
-    babel-preset-stage-0 "^6.24.1"
 
 gauge@~2.7.1:
   version "2.7.4"

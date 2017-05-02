@@ -73,6 +73,7 @@ export default class {
   }
 
   async activate() {
+    return;
     this.pool = new pg.Pool({
       ...POSTGRES_CONFIG,
       host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
@@ -107,6 +108,10 @@ export default class {
 
   run = (sql) => {
     sql = sql.replace(/\0/g, '');
+
+    if (fulcrum.args.debug) {
+      console.log(sql);
+    }
 
     return new Promise((resolve, reject) => {
       this.pool.query(sql, [], (err, res) => {

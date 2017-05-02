@@ -1,5 +1,5 @@
 {
-  "name": "fulcrum-sync-postgres",
+  "name": "fulcrum-desktop-postgres",
   "version": "1.0.0",
   "main": "dist/plugin.js",
   "license": "MIT",
@@ -9,14 +9,13 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "babel-plugin-fulcrum-sync": "^1.0.0",
     "fulcrum-schema": "fulcrumapp/fulcrum-schema#v2",
     "pg": "^6.1.5",
-    "fulcrum-sync-plugin": "^1.4.0"
+    "fulcrum-desktop-plugin": "^1.4.0"
   },
   "babel": {
     "plugins": [
-      "fulcrum-sync"
+      "fulcrum-desktop"
     ],
     "presets": [
       "stage-0",
@@ -32,6 +31,6 @@
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
-    "babel-plugin-fulcrum-sync": "^1.0.0"
+    "babel-plugin-fulcrum-desktop": "^1.0.0"
   }
 }

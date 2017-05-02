@@ -1,11 +1,11 @@
-## Fulcrum Sync PostgreSQL
+## Fulcrum Desktop PostgreSQL
 
 Sync Fulcrum data to PostgreSQL.
 
 ### Installation
 
 ```sh
-fulcrum install-plugin --url https://github.com/fulcrumapp/fulcrum-sync-postgres
+fulcrum install-plugin --url https://github.com/fulcrumapp/fulcrum-desktop-postgres
 ```
 
 ### Sync a Form
