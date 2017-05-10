@@ -73,7 +73,6 @@ export default class {
   }
 
   async activate() {
-    return;
     this.pool = new pg.Pool({
       ...POSTGRES_CONFIG,
       host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
