@@ -51,21 +51,27 @@ export default class {
       const forms = await account.findActiveForms({});
 
       for (const form of forms) {
-        try {
-          await this.updateForm(form, account, this.formVersion(form), null);
-        } catch (ex) {
-          // ignore errors
-        }
+        await this.recreateFormTables(form, account);
 
-        await this.updateForm(form, account, null, this.formVersion(form));
+        let index = 0;
 
         await form.findEachRecord({}, async (record) => {
           await record.getForm();
 
-          process.stdout.write('.');
+          if (++index % 10 === 0) {
+            process.stdout.clearLine();
+            process.stdout.cursorTo(0);
+            process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
+          }
 
-          await this.updateRecord(record);
+          await this.updateRecord(record, account, true);
         });
+
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+        process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
+
+        console.log('');
       }
     } else {
       console.error('Unable to find account', this.args.org);
@@ -76,7 +82,7 @@ export default class {
     this.pool = new pg.Pool({
       ...POSTGRES_CONFIG,
       host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
-      port: fulcrum.args.pgport  || POSTGRES_CONFIG.port,
+      port: fulcrum.args.pgport || POSTGRES_CONFIG.port,
       database: fulcrum.args.pgdatabase || POSTGRES_CONFIG.database
     });
 
@@ -135,8 +141,8 @@ export default class {
     await this.updateForm(form, account, oldForm, newForm);
   }
 
-  onRecordSave = async ({record}) => {
-    await this.updateRecord(record);
+  onRecordSave = async ({record, account}) => {
+    await this.updateRecord(record, account);
   }
 
   onRecordDelete = async ({record}) => {
@@ -154,16 +160,41 @@ export default class {
   onProjectSave = async ({object}) => {
   }
 
-  updateRecord = async (record) => {
+  reloadTableList = async () => {
+    const rows = await this.run("SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'");
+
+    this.tableNames = rows.map(o => o.name);
+  }
+
+  updateRecord = async (record, account, skipTableCheck) => {
+    if (!skipTableCheck && !this.rootTableExists(record.form)) {
+      await this.recreateFormTables(record.form, account);
+      await this.reloadTableList();
+    }
+
     const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record);
 
     await this.run(statements.map(o => o.sql).join('\n'));
   }
 
-  updateForm = async (form, account, oldForm, newForm) => {
-    const rootTableName = PostgresRecordValues.tableNameWithForm(form);
+  rootTableExists = (form) => {
+    return this.tableNames.indexOf(PostgresRecordValues.tableNameWithForm(form)) !== -1;
+  }
 
-    if (this.tableNames.indexOf(rootTableName) === -1) {
+  recreateFormTables = async (form, account) => {
+    try {
+      await this.updateForm(form, account, this.formVersion(form), null);
+    } catch (ex) {
+      if (fulcrum.args.debug) {
+        console.error(sql);
+      }
+    }
+
+    await this.updateForm(form, account, null, this.formVersion(form));
+  }
+
+  updateForm = async (form, account, oldForm, newForm) => {
+    if (!this.rootTableExists(form) && newForm != null) {
       oldForm = null;
     }
 
@@ -187,15 +218,23 @@ export default class {
   async dropFriendlyView(form, repeatable) {
     const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
 
-    await this.run(format('DROP VIEW IF EXISTS %s', this.pgdb.ident(viewName)));
+    try {
+      await this.run(format('DROP VIEW IF EXISTS %s;', this.pgdb.ident(viewName)));
+    } catch (ex) {
+      // sometimes it doesn't exist
+    }
   }
 
   async createFriendlyView(form, repeatable) {
     const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
 
-    await this.run(format('CREATE VIEW %s AS SELECT * FROM %s_view_full',
-                          this.pgdb.ident(viewName),
-                          PostgresRecordValues.tableNameWithForm(form, repeatable)));
+    try {
+      await this.run(format('CREATE VIEW %s AS SELECT * FROM %s_view_full;',
+                            this.pgdb.ident(viewName),
+                            PostgresRecordValues.tableNameWithForm(form, repeatable)));
+    } catch (ex) {
+      // sometimes it doesn't exist
+    }
   }
 
   formVersion = (form) => {
