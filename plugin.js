@@ -179,8 +179,6 @@ export default class {
 
   updateRecord = async (record, account, skipTableCheck) => {
     if (!skipTableCheck && !this.rootTableExists(record.form)) {
-      await this.recreateFormTables(record.form, account);
-      await this.reloadTableList();
       await this.rebuildForm(record.form, account, () => {});
     }
 
@@ -258,6 +256,7 @@ export default class {
 
   async rebuildForm(form, account, progress) {
     await this.recreateFormTables(form, account);
+    await this.reloadTableList();
 
     let index = 0;
 
