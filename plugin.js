@@ -32,6 +32,14 @@ export default class {
           type: 'integer',
           default: POSTGRES_CONFIG.port
         },
+        pguser: {
+          desc: 'postgresql user',
+          type: 'string'
+        },
+        pgpassword: {
+          desc: 'postgresql password',
+          type: 'string'
+        },
         org: {
           desc: 'organization name',
           required: true,
@@ -79,12 +87,24 @@ export default class {
   }
 
   async activate() {
-    this.pool = new pg.Pool({
+    const options = {
       ...POSTGRES_CONFIG,
       host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
       port: fulcrum.args.pgport || POSTGRES_CONFIG.port,
-      database: fulcrum.args.pgdatabase || POSTGRES_CONFIG.database
-    });
+      database: fulcrum.args.pgdatabase || POSTGRES_CONFIG.database,
+      user: fulcrum.args.pguser || POSTGRES_CONFIG.user,
+      password: fulcrum.args.pgpassword || POSTGRES_CONFIG.user
+    };
+
+    if (fulcrum.args.pguser) {
+      options.user = fulcrum.args.pguser;
+    }
+
+    if (fulcrum.args.pgpassword) {
+      options.password = fulcrum.args.pgpassword;
+    }
+
+    this.pool = new pg.Pool(options);
 
     // fulcrum.on('choice_list:save', this.onChoiceListSave);
     // fulcrum.on('classification_set:save', this.onClassificationSetSave);
