@@ -244,7 +244,7 @@ export default class {
     const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
 
     try {
-      await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(fulcrum.args.schema), this.pgdb.ident(viewName)));
+      await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(fulcrum.args.pgschema), this.pgdb.ident(viewName)));
     } catch (ex) {
       // sometimes it doesn't exist
     }
@@ -255,7 +255,7 @@ export default class {
 
     try {
       await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
-                            this.pgdb.ident(fulcrum.args.schema),
+                            this.pgdb.ident(fulcrum.args.pgschema),
                             this.pgdb.ident(viewName),
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
