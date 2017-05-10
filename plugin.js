@@ -42,8 +42,7 @@ export default class {
         },
         pgschema: {
           desc: 'postgresql schema',
-          type: 'string',
-          default: 'public'
+          type: 'string'
         },
         org: {
           desc: 'organization name',
@@ -64,30 +63,16 @@ export default class {
       const forms = await account.findActiveForms({});
 
       for (const form of forms) {
-        await this.recreateFormTables(form, account);
-
-        let index = 0;
-
-        await form.findEachRecord({}, async (record) => {
-          await record.getForm();
-
-          if (++index % 10 === 0) {
-            process.stdout.clearLine();
-            process.stdout.cursorTo(0);
-            process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
-          }
-
-          await this.updateRecord(record, account, true);
+        await this.rebuildForm(form, account, (index) => {
+          process.stdout.clearLine();
+          process.stdout.cursorTo(0);
+          process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
         });
-
-        process.stdout.clearLine();
-        process.stdout.cursorTo(0);
-        process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
 
         console.log('');
       }
     } else {
-      console.error('Unable to find account', this.args.org);
+      console.error('Unable to find account', fulcrum.args.org);
     }
   }
 
@@ -124,6 +109,7 @@ export default class {
     // of applying a schema diff.
     const rows = await this.run("SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'");
 
+    this.dataSchema = fulcrum.args.pgschema || 'public';
     this.tableNames = rows.map(o => o.name);
 
     // make a client so we can use it to build SQL statements
@@ -195,6 +181,7 @@ export default class {
     if (!skipTableCheck && !this.rootTableExists(record.form)) {
       await this.recreateFormTables(record.form, account);
       await this.reloadTableList();
+      await this.rebuildForm(record.form, account, () => {});
     }
 
     const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record);
@@ -244,8 +231,11 @@ export default class {
     const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
 
     try {
-      await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(fulcrum.args.pgschema), this.pgdb.ident(viewName)));
+      await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(this.dataSchema), this.pgdb.ident(viewName)));
     } catch (ex) {
+      if (fulcrum.args.debug) {
+        console.error(ex);
+      }
       // sometimes it doesn't exist
     }
   }
@@ -255,12 +245,33 @@ export default class {
 
     try {
       await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
-                            this.pgdb.ident(fulcrum.args.pgschema),
+                            this.pgdb.ident(this.dataSchema),
                             this.pgdb.ident(viewName),
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
+      if (fulcrum.args.debug) {
+        console.error(ex);
+      }
       // sometimes it doesn't exist
     }
+  }
+
+  async rebuildForm(form, account, progress) {
+    await this.recreateFormTables(form, account);
+
+    let index = 0;
+
+    await form.findEachRecord({}, async (record) => {
+      record.form = form;
+
+      if (++index % 10 === 0) {
+        progress(index);
+      }
+
+      await this.updateRecord(record, account, true);
+    });
+
+    progress(index);
   }
 
   formVersion = (form) => {
