@@ -64,9 +64,7 @@ export default class {
 
       for (const form of forms) {
         await this.rebuildForm(form, account, (index) => {
-          process.stdout.clearLine();
-          process.stdout.cursorTo(0);
-          process.stdout.write(form.name.green + ' : ' + index.toString().red + ' records');
+          this.updateStatus(form.name.green + ' : ' + index.toString().red + ' records');
         });
 
         console.log('');
@@ -284,5 +282,13 @@ export default class {
       name: form._name,
       elements: form._elementsJSON
     };
+  }
+
+  updateStatus = (message) => {
+    if (process.stdout.isTTY) {
+      process.stdout.clearLine();
+      process.stdout.cursorTo(0);
+      process.stdout.write(message);
+    }
   }
 }
