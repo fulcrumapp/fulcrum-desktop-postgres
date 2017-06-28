@@ -17,31 +17,40 @@ export default class {
       command: 'postgres',
       desc: 'run the postgres sync for a specific organization',
       builder: {
-        pgdatabase: {
+        pgDatabase: {
           desc: 'postgresql database name',
           type: 'string',
           default: POSTGRES_CONFIG.database
         },
-        pghost: {
+        pgHost: {
           desc: 'postgresql server host',
           type: 'string',
           default: POSTGRES_CONFIG.host
         },
-        pgport: {
+        pgPort: {
           desc: 'postgresql server port',
           type: 'integer',
           default: POSTGRES_CONFIG.port
         },
-        pguser: {
+        pgUser: {
           desc: 'postgresql user',
           type: 'string'
         },
-        pgpassword: {
+        pgPassword: {
           desc: 'postgresql password',
           type: 'string'
         },
-        pgschema: {
+        pgSchema: {
           desc: 'postgresql schema',
+          type: 'string'
+        },
+        pgSyncEvents: {
+          desc: 'add sync event hooks',
+          type: 'boolean',
+          default: true
+        },
+        pgAfterFunction: {
+          desc: 'call this function after the sync',
           type: 'string'
         },
         org: {
@@ -60,6 +69,8 @@ export default class {
     const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
     if (account) {
+      await this.invokeBeforeFunction();
+
       const forms = await account.findActiveForms({});
 
       for (const form of forms) {
@@ -69,27 +80,33 @@ export default class {
 
         console.log('');
       }
+
+      await this.invokeAfterFunction();
     } else {
       console.error('Unable to find account', fulcrum.args.org);
     }
   }
 
+  get useSyncEvents() {
+    return fulcrum.args.pgSyncEvents != null ? fulcrum.args.pgSyncEvents : true;
+  }
+
   async activate() {
     const options = {
       ...POSTGRES_CONFIG,
-      host: fulcrum.args.pghost || POSTGRES_CONFIG.host,
-      port: fulcrum.args.pgport || POSTGRES_CONFIG.port,
-      database: fulcrum.args.pgdatabase || POSTGRES_CONFIG.database,
-      user: fulcrum.args.pguser || POSTGRES_CONFIG.user,
-      password: fulcrum.args.pgpassword || POSTGRES_CONFIG.user
+      host: fulcrum.args.pgHost || POSTGRES_CONFIG.host,
+      port: fulcrum.args.pgPort || POSTGRES_CONFIG.port,
+      database: fulcrum.args.pgDatabase || POSTGRES_CONFIG.database,
+      user: fulcrum.args.pgUser || POSTGRES_CONFIG.user,
+      password: fulcrum.args.pgPassword || POSTGRES_CONFIG.user
     };
 
-    if (fulcrum.args.pguser) {
-      options.user = fulcrum.args.pguser;
+    if (fulcrum.args.pgUser) {
+      options.user = fulcrum.args.pgUser;
     }
 
-    if (fulcrum.args.pgpassword) {
-      options.password = fulcrum.args.pgpassword;
+    if (fulcrum.args.pgPassword) {
+      options.password = fulcrum.args.pgPassword;
     }
 
     this.pool = new pg.Pool(options);
@@ -97,9 +114,11 @@ export default class {
     // fulcrum.on('choice_list:save', this.onChoiceListSave);
     // fulcrum.on('classification_set:save', this.onClassificationSetSave);
     // fulcrum.on('project:save', this.onProjectSave);
-    fulcrum.on('form:save', this.onFormSave);
-    fulcrum.on('record:save', this.onRecordSave);
-    fulcrum.on('record:delete', this.onRecordDelete);
+    if (this.useSyncEvents) {
+      fulcrum.on('form:save', this.onFormSave);
+      fulcrum.on('record:save', this.onRecordSave);
+      fulcrum.on('record:delete', this.onRecordDelete);
+    }
 
     // Fetch all the existing tables on startup. This allows us to special case the
     // creation of new tables even when the form isn't version 1. If the table doesn't
@@ -107,7 +126,7 @@ export default class {
     // of applying a schema diff.
     const rows = await this.run("SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'");
 
-    this.dataSchema = fulcrum.args.pgschema || 'public';
+    this.dataSchema = fulcrum.args.pgSchema || 'public';
     this.tableNames = rows.map(o => o.name);
 
     // make a client so we can use it to build SQL statements
@@ -249,6 +268,18 @@ export default class {
         console.error(ex);
       }
       // sometimes it doesn't exist
+    }
+  }
+
+  async invokeBeforeFunction() {
+    if (fulcrum.args.beforeFunction) {
+      await this.run(format('SELECT %s();', fulcrum.args.beforeFunction));
+    }
+  }
+
+  async invokeAfterFunction() {
+    if (fulcrum.args.afterFunction) {
+      await this.run(format('SELECT %s();', fulcrum.args.afterFunction));
     }
   }
 
