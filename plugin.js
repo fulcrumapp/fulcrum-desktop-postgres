@@ -62,11 +62,11 @@ export default class {
           required: true,
           type: 'string'
         },
-        reportBaseUrl: {
+        pgReportBaseUrl: {
           desc: 'report URL base',
           type: 'string'
         },
-        mediaBaseUrl: {
+        pgMediaBaseUrl: {
           desc: 'media URL base',
           type: 'string'
         }
@@ -211,7 +211,7 @@ export default class {
   setupOptions() {
     this.recordValueOptions = {
       mediaURLFormatter: (mediaValue) => {
-        const baseURL = fulcrum.args.mediaBaseUrl ? fulcrum.args.mediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
+        const baseURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
 
         return mediaValue.items.map((item) => {
           if (mediaValue.element.isPhotoElement) {
@@ -227,7 +227,7 @@ export default class {
       },
 
       mediaViewURLFormatter: (mediaValue) => {
-        const baseURL = fulcrum.args.mediaBaseUrl ? fulcrum.args.mediaBaseUrl : 'https://web.fulcrumapp.com';
+        const baseURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://web.fulcrumapp.com';
 
         const ids = mediaValue.items.map(o => o.mediaID);
 
@@ -243,9 +243,9 @@ export default class {
       }
     };
 
-    if (fulcrum.args.reportBaseUrl) {
+    if (fulcrum.args.pgReportBaseUrl) {
       this.recordValueOptions.reportURLFormatter = (feature) => {
-        return `${ fulcrum.args.reportBaseUrl }/reports/${ feature.id }.pdf`;
+        return `${ fulcrum.args.pgReportBaseUrl }/reports/${ feature.id }.pdf`;
       };
     }
   }
