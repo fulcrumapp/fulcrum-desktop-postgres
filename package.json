@@ -11,7 +11,8 @@
   "dependencies": {
     "fulcrum-desktop-plugin": "^1.4.0",
     "fulcrum-schema": "fulcrumapp/fulcrum-schema#url-columns",
-    "pg": "^6.1.5"
+    "pg": "^6.1.5",
+    "snake-case": "^2.1.0"
   },
   "babel": {
     "plugins": [

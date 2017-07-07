@@ -2,6 +2,7 @@ import pg from 'pg';
 import { format } from 'util';
 import PostgresSchema from './schema';
 import { PostgresRecordValues, Postgres } from 'fulcrum';
+import snake from 'snake-case';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -69,6 +70,18 @@ export default class {
         pgMediaBaseUrl: {
           desc: 'media URL base',
           type: 'string'
+        },
+        pgUnderscoreNames: {
+          desc: 'use underscore names (e.g. "Park Inspections" becomes "park_inspections")',
+          required: false,
+          type: 'boolean',
+          default: false
+        },
+        pgRebuildViewsOnly: {
+          desc: 'only rebuild the views',
+          required: false,
+          type: 'boolean',
+          default: false
         }
       },
       handler: this.runCommand
@@ -86,9 +99,13 @@ export default class {
       const forms = await account.findActiveForms({});
 
       for (const form of forms) {
-        await this.rebuildForm(form, account, (index) => {
-          this.updateStatus(form.name.green + ' : ' + index.toString().red + ' records');
-        });
+        if (fulcrum.args.pgRebuildViewsOnly) {
+          await this.rebuildFriendlyViews(form, account);
+        } else {
+          await this.rebuildForm(form, account, (index) => {
+            this.updateStatus(form.name.green + ' : ' + index.toString().red + ' records');
+          });
+        }
 
         console.log('');
       }
@@ -299,7 +316,7 @@ export default class {
   }
 
   async dropFriendlyView(form, repeatable) {
-    const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
+    const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
       await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(this.dataSchema), this.pgdb.ident(viewName)));
@@ -312,7 +329,7 @@ export default class {
   }
 
   async createFriendlyView(form, repeatable) {
-    const viewName = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
+    const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
       await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
@@ -325,6 +342,12 @@ export default class {
       }
       // sometimes it doesn't exist
     }
+  }
+
+  getFriendlyTableName(form, repeatable) {
+    const name = repeatable ? `${form.name} - ${repeatable.dataName}` : form.name;
+
+    return fulcrum.args.pgUnderscoreNames ? snake(name) : name;
   }
 
   async invokeBeforeFunction() {
@@ -356,6 +379,20 @@ export default class {
     });
 
     progress(index);
+  }
+
+  async rebuildFriendlyViews(form, account) {
+    await this.dropFriendlyView(form, null);
+
+    for (const repeatable of form.elementsOfType('Repeatable')) {
+      await this.dropFriendlyView(form, repeatable);
+    }
+
+    await this.createFriendlyView(form, null);
+
+    for (const repeatable of form.elementsOfType('Repeatable')) {
+      await this.createFriendlyView(form, repeatable);
+    }
   }
 
   formVersion = (form) => {
