@@ -144,6 +144,8 @@ export default class {
     // fulcrum.on('classification_set:save', this.onClassificationSetSave);
     // fulcrum.on('project:save', this.onProjectSave);
     if (this.useSyncEvents) {
+      fulcrum.on('sync:start', this.onSyncStart);
+      fulcrum.on('sync:finish', this.onSyncFinish);
       fulcrum.on('form:save', this.onFormSave);
       fulcrum.on('record:save', this.onRecordSave);
       fulcrum.on('record:delete', this.onRecordDelete);
@@ -194,6 +196,14 @@ export default class {
 
   tableName = (account, name) => {
     return 'account_' + account.rowID + '_' + name;
+  }
+
+  onSyncStart = async ({account, tasks}) => {
+    this.invokeBeforeFunction();
+  }
+
+  onSyncFinish = async ({account}) => {
+    this.invokeAfterFunction();
   }
 
   onFormSave = async ({form, account, oldForm, newForm}) => {
