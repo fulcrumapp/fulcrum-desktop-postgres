@@ -361,14 +361,14 @@ export default class {
   }
 
   async invokeBeforeFunction() {
-    if (fulcrum.args.beforeFunction) {
-      await this.run(format('SELECT %s();', fulcrum.args.beforeFunction));
+    if (fulcrum.args.pgBeforeFunction) {
+      await this.run(format('SELECT %s();', fulcrum.args.pgBeforeFunction));
     }
   }
 
   async invokeAfterFunction() {
-    if (fulcrum.args.afterFunction) {
-      await this.run(format('SELECT %s();', fulcrum.args.afterFunction));
+    if (fulcrum.args.pgAfterFunction) {
+      await this.run(format('SELECT %s();', fulcrum.args.pgAfterFunction));
     }
   }
 
