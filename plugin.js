@@ -49,6 +49,10 @@ export default class {
           type: 'boolean',
           default: true
         },
+        pgBeforeFunction: {
+          desc: 'call this function before the sync',
+          type: 'string'
+        },
         pgAfterFunction: {
           desc: 'call this function after the sync',
           type: 'string'
@@ -56,6 +60,14 @@ export default class {
         org: {
           desc: 'organization name',
           required: true,
+          type: 'string'
+        },
+        reportBaseUrl: {
+          desc: 'report URL base',
+          type: 'string'
+        },
+        mediaBaseUrl: {
+          desc: 'media URL base',
           type: 'string'
         }
       },
@@ -131,6 +143,8 @@ export default class {
 
     // make a client so we can use it to build SQL statements
     this.pgdb = new Postgres({});
+
+    this.setupOptions();
   }
 
   async deactivate() {
@@ -174,7 +188,7 @@ export default class {
   }
 
   onRecordDelete = async ({record}) => {
-    const statements = PostgresRecordValues.deleteForRecordStatements(this.pgdb, record, record.form);
+    const statements = PostgresRecordValues.deleteForRecordStatements(this.pgdb, record, record.form, this.recordValueOptions);
 
     await this.run(statements.map(o => o.sql).join('\n'));
   }
@@ -194,12 +208,54 @@ export default class {
     this.tableNames = rows.map(o => o.name);
   }
 
+  setupOptions() {
+    this.recordValueOptions = {
+      mediaURLFormatter: (mediaValue) => {
+        const baseURL = fulcrum.args.mediaBaseUrl ? fulcrum.args.mediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
+
+        return mediaValue.items.map((item) => {
+          if (mediaValue.element.isPhotoElement) {
+            return `${ baseURL }/photos/${ item.mediaID }.jpg`;
+          } else if (mediaValue.element.isVideoElement) {
+            return `${ baseURL }/videos/${ item.mediaID }.mp4`;
+          } else if (mediaValue.element.isAudioElement) {
+            return `${ baseURL }/audio/${ item.mediaID }.m4a`;
+          }
+
+          return null;
+        });
+      },
+
+      mediaViewURLFormatter: (mediaValue) => {
+        const baseURL = fulcrum.args.mediaBaseUrl ? fulcrum.args.mediaBaseUrl : 'https://web.fulcrumapp.com';
+
+        const ids = mediaValue.items.map(o => o.mediaID);
+
+        if (mediaValue.element.isPhotoElement) {
+          return `${ baseURL }/photos/view?photos=${ ids }`;
+        } else if (mediaValue.element.isVideoElement) {
+          return `${ baseURL }/videos/view?videos=${ ids }`;
+        } else if (mediaValue.element.isAudioElement) {
+          return `${ baseURL }/audio/view?audio=${ ids }`;
+        }
+
+        return null;
+      }
+    };
+
+    if (fulcrum.args.reportBaseUrl) {
+      this.recordValueOptions.reportURLFormatter = (feature) => {
+        return `${ fulcrum.args.reportBaseUrl }/reports/${ feature.id }.pdf`;
+      };
+    }
+  }
+
   updateRecord = async (record, account, skipTableCheck) => {
     if (!skipTableCheck && !this.rootTableExists(record.form)) {
       await this.rebuildForm(record.form, account, () => {});
     }
 
-    const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record);
+    const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record, this.recordValueOptions);
 
     await this.run(statements.map(o => o.sql).join('\n'));
   }

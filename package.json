@@ -9,9 +9,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "fulcrum-schema": "fulcrumapp/fulcrum-schema#v2",
-    "pg": "^6.1.5",
-    "fulcrum-desktop-plugin": "^1.4.0"
+    "fulcrum-desktop-plugin": "^1.4.0",
+    "fulcrum-schema": "fulcrumapp/fulcrum-schema#url-columns",
+    "pg": "^6.1.5"
   },
   "babel": {
     "plugins": [

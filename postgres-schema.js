@@ -2,6 +2,10 @@ import _ from 'underscore';
 
 const Schema = {};
 
+Schema.includeMediaCaptions = true;
+Schema.includeMediaURLs = true;
+Schema.includeMediaViewURLs = true;
+
 Schema.systemFormTableColumns = [
   {
     name: 'id',
@@ -144,6 +148,9 @@ Schema.systemFormTableColumns = [
   }, {
     name: 'edited_duration',
     type: 'integer'
+  }, {
+    name: 'report_url',
+    type: 'string'
   }
 ];
 
@@ -326,6 +333,9 @@ Schema.systemRepeatableTableColumns = [
   }, {
     name: 'edited_duration',
     type: 'integer'
+  }, {
+    name: 'report_url',
+    type: 'string'
   }
 ];
 
@@ -361,7 +371,8 @@ Schema.systemFormViewColumns = {
   updated_horizontal_accuracy: 'updated_horizontal_accuracy',
   created_duration: 'created_duration',
   updated_duration: 'updated_duration',
-  edited_duration: 'edited_duration'
+  edited_duration: 'edited_duration',
+  report_url: 'report_url'
 };
 
 Schema.systemFormFullViewColumns = _.clone(Schema.systemFormViewColumns);
@@ -399,7 +410,8 @@ Schema.systemRepeatableViewColumns = {
   updated_horizontal_accuracy: 'updated_horizontal_accuracy',
   created_duration: 'created_duration',
   updated_duration: 'updated_duration',
-  edited_duration: 'edited_duration'
+  edited_duration: 'edited_duration',
+  report_url: 'report_url'
 };
 
 Schema.systemRepeatableFullViewColumns = _.clone(Schema.systemRepeatableViewColumns);
