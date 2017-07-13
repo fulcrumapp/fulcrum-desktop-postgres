@@ -82,6 +82,11 @@ export default class {
           required: false,
           type: 'boolean',
           default: false
+        },
+        pgCustomModule: {
+          desc: 'a custom module to load with sync extensions',
+          required: false,
+          type: 'string'
         }
       },
       handler: this.runCommand
@@ -136,6 +141,10 @@ export default class {
 
     if (fulcrum.args.pgPassword) {
       options.password = fulcrum.args.pgPassword;
+    }
+
+    if (fulcrum.args.pgCustomModule) {
+      this.pgCustomModule = require(fulcrum.args.pgCustomModule);
     }
 
     this.pool = new pg.Pool(options);
@@ -282,6 +291,10 @@ export default class {
       await this.rebuildForm(record.form, account, () => {});
     }
 
+    if (this.pgCustomModule && this.pgCustomModule.shouldUpdateRecord && !this.pgCustomModule.shouldUpdateRecord({record, account})) {
+      return;
+    }
+
     const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record, this.recordValueOptions);
 
     await this.run(statements.map(o => o.sql).join('\n'));
@@ -304,6 +317,10 @@ export default class {
   }
 
   updateForm = async (form, account, oldForm, newForm) => {
+    if (this.pgCustomModule && this.pgCustomModule.shouldUpdateForm && !this.pgCustomModule.shouldUpdateForm({form, account})) {
+      return;
+    }
+
     if (!this.rootTableExists(form) && newForm != null) {
       oldForm = null;
     }
