@@ -3,6 +3,8 @@ import { format } from 'util';
 import PostgresSchema from './schema';
 import { PostgresRecordValues, Postgres } from 'fulcrum';
 import snake from 'snake-case';
+import template from './template.sql';
+import SchemaMap from './schema-map';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -87,6 +89,17 @@ export default class {
           desc: 'a custom module to load with sync extensions',
           required: false,
           type: 'string'
+        },
+        pgSetup: {
+          desc: 'setup the database',
+          required: false,
+          type: 'boolean'
+        },
+        pgArrays: {
+          desc: 'use array types for multi-value fields like choice fields, classification fields and media fields',
+          required: false,
+          type: 'boolean',
+          default: true
         }
       },
       handler: this.runCommand
@@ -95,6 +108,11 @@ export default class {
 
   runCommand = async () => {
     await this.activate();
+
+    if (fulcrum.args.pgSetup) {
+      await this.setupDatabase();
+      return;
+    }
 
     const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
@@ -147,15 +165,19 @@ export default class {
       this.pgCustomModule = require(fulcrum.args.pgCustomModule);
     }
 
+    if (fulcrum.args.arrays === false) {
+      this.disableArrays = true;
+    }
+
     this.pool = new pg.Pool(options);
 
-    // fulcrum.on('choice_list:save', this.onChoiceListSave);
-    // fulcrum.on('classification_set:save', this.onClassificationSetSave);
-    // fulcrum.on('project:save', this.onProjectSave);
     if (this.useSyncEvents) {
       fulcrum.on('sync:start', this.onSyncStart);
       fulcrum.on('sync:finish', this.onSyncFinish);
       fulcrum.on('form:save', this.onFormSave);
+      fulcrum.on('photo:save', this.onPhotoSave);
+      fulcrum.on('video:save', this.onVideoSave);
+      fulcrum.on('audio:save', this.onAudioSave);
       fulcrum.on('record:save', this.onRecordSave);
       fulcrum.on('record:delete', this.onRecordDelete);
     }
@@ -229,6 +251,18 @@ export default class {
     await this.run(statements.map(o => o.sql).join('\n'));
   }
 
+  onPhotoSave = async ({photo, account}) => {
+    await this.updatePhoto(photo, account);
+  }
+
+  onVideoSave = async ({video, account}) => {
+    await this.updateVideo(video, account);
+  }
+
+  onAudioSave = async ({audio, account}) => {
+    await this.updateAudio(audio, account);
+  }
+
   onChoiceListSave = async ({object}) => {
   }
 
@@ -236,6 +270,39 @@ export default class {
   }
 
   onProjectSave = async ({object}) => {
+  }
+
+  async updatePhoto(object, account) {
+    await this.updateObject(SchemaMap.photo(object), 'photos');
+  }
+
+  async updateVideo(object, account) {
+    await this.updateObject(SchemaMap.video(object), 'videos');
+  }
+
+  async updateAudio(object, account) {
+    await this.updateObject(SchemaMap.audio(object), 'audio');
+  }
+
+  async updateProject(object, account) {
+    await this.updateObject(SchemaMap.project(object), 'projects');
+  }
+
+  async updateMemberships(object, account) {
+    await this.updateObject(SchemaMap.membership(object), 'memberships');
+  }
+
+  async updateObject(values, table) {
+    try {
+      const deleteStatement = this.pgdb.deleteStatement(table, {row_resource_id: values.row_resource_id});
+      const insertStatement = this.pgdb.insertStatement(table, values, {pk: 'id'});
+
+      const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
+
+      await this.run(sql);
+    } catch (ex) {
+      console.error(ex);
+    }
   }
 
   reloadTableList = async () => {
@@ -246,6 +313,8 @@ export default class {
 
   setupOptions() {
     this.recordValueOptions = {
+      disableArrays: this.disableArrays,
+
       mediaURLFormatter: (mediaValue) => {
         const baseURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
 
@@ -325,7 +394,7 @@ export default class {
       oldForm = null;
     }
 
-    const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm);
+    const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays);
 
     await this.dropFriendlyView(form, null);
 
@@ -441,5 +510,12 @@ export default class {
       process.stdout.cursorTo(0);
       process.stdout.write(message);
     }
+  }
+
+  async setupDatabase() {
+    const sql = template.replace(/__SCHEMA__/g, 'public')
+                        .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
+
+    await this.run(sql);
   }
 }
