@@ -5,18 +5,24 @@ import PGSchema from './postgres-schema';
 const {SchemaDiffer, Postgres} = sqldiff;
 
 export default class PostgresSchema {
-  static async generateSchemaStatements(account, oldForm, newForm, disableArrays) {
+  static async generateSchemaStatements(account, oldForm, newForm, disableArrays, userModule) {
     let oldSchema = null;
     let newSchema = null;
 
     PGSchema.disableArrays = disableArrays;
 
+    if (userModule && userModule.updateSchema && !PGSchema._modified) {
+      userModule.updateSchema(PGSchema);
+
+      PGSchema._modified = true;
+    }
+
     if (oldForm) {
-      oldSchema = new Schema(oldForm, PGSchema, null);
+      oldSchema = new Schema(oldForm, PGSchema, userModule && userModule.schemaOptions);
     }
 
     if (newForm) {
-      newSchema = new Schema(newForm, PGSchema, null);
+      newSchema = new Schema(newForm, PGSchema, userModule && userModule.schemaOptions);
     }
 
     const differ = new SchemaDiffer(oldSchema, newSchema);

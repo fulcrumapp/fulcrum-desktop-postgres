@@ -432,6 +432,8 @@ export default class {
     this.recordValueOptions = {
       disableArrays: this.disableArrays,
 
+      valuesTransformer: this.pgCustomModule && this.pgCustomModule.valuesTransformer,
+
       mediaURLFormatter: (mediaValue) => {
 
         return mediaValue.items.map((item) => {
@@ -508,7 +510,7 @@ export default class {
       oldForm = null;
     }
 
-    const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays);
+    const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule);
 
     await this.dropFriendlyView(form, null);
 
