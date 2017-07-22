@@ -4,6 +4,7 @@ import PostgresSchema from './schema';
 import { PostgresRecordValues, Postgres } from 'fulcrum';
 import snake from 'snake-case';
 import template from './template.sql';
+import templateDrop from './template.drop.sql';
 import SchemaMap from './schema-map';
 
 const POSTGRES_CONFIG = {
@@ -95,6 +96,12 @@ export default class {
           required: false,
           type: 'boolean'
         },
+        pgDrop: {
+          desc: 'drop the system tables',
+          required: false,
+          type: 'boolean',
+          default: false
+        },
         pgArrays: {
           desc: 'use array types for multi-value fields like choice fields, classification fields and media fields',
           required: false,
@@ -114,6 +121,11 @@ export default class {
 
   runCommand = async () => {
     await this.activate();
+
+    if (fulcrum.args.pgDrop) {
+      await this.dropSystemTables();
+      return;
+    }
 
     if (fulcrum.args.pgSetup) {
       await this.setupDatabase();
@@ -612,6 +624,13 @@ export default class {
       process.stdout.cursorTo(0);
       process.stdout.write(message);
     }
+  }
+
+  async dropSystemTables() {
+    const sql = templateDrop.replace(/__SCHEMA__/g, 'public')
+                            .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
+
+    await this.run(sql);
   }
 
   async setupDatabase() {
