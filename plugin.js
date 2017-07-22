@@ -100,6 +100,12 @@ export default class {
           required: false,
           type: 'boolean',
           default: true
+        },
+        pgSystemTablesOnly: {
+          desc: 'only create the system records',
+          required: false,
+          type: 'boolean',
+          default: false
         }
       },
       handler: this.runCommand
@@ -117,6 +123,11 @@ export default class {
     const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
     if (account) {
+      if (fulcrum.args.pgSystemTablesOnly) {
+        await this.setupSystemTables(account);
+        return;
+      }
+
       await this.invokeBeforeFunction();
 
       const forms = await account.findActiveForms({});
@@ -174,12 +185,30 @@ export default class {
     if (this.useSyncEvents) {
       fulcrum.on('sync:start', this.onSyncStart);
       fulcrum.on('sync:finish', this.onSyncFinish);
-      fulcrum.on('form:save', this.onFormSave);
       fulcrum.on('photo:save', this.onPhotoSave);
       fulcrum.on('video:save', this.onVideoSave);
       fulcrum.on('audio:save', this.onAudioSave);
+      fulcrum.on('changeset:save', this.onChangesetSave);
       fulcrum.on('record:save', this.onRecordSave);
       fulcrum.on('record:delete', this.onRecordDelete);
+
+      fulcrum.on('choice-list:save', this.onChoiceListSave);
+      fulcrum.on('choice-list:delete', this.onChoiceListSave);
+
+      fulcrum.on('form:save', this.onFormSave);
+      fulcrum.on('form:delete', this.onFormSave);
+
+      fulcrum.on('classification-set:save', this.onClassificationSetSave);
+      fulcrum.on('classification-set:delete', this.onClassificationSetSave);
+
+      fulcrum.on('role:save', this.onRoleSave);
+      fulcrum.on('role:delete', this.onRoleSave);
+
+      fulcrum.on('project:save', this.onProjectSave);
+      fulcrum.on('project:delete', this.onProjectSave);
+
+      fulcrum.on('membership:save', this.onMembershipSave);
+      fulcrum.on('membership:delete', this.onMembershipSave);
     }
 
     // Fetch all the existing tables on startup. This allows us to special case the
@@ -241,6 +270,17 @@ export default class {
     await this.updateForm(form, account, oldForm, newForm);
   }
 
+  onFormDelete = async ({form, account}) => {
+    const oldForm = {
+      id: form._id,
+      row_id: form.rowID,
+      name: form._name,
+      elements: form._elementsJSON
+    };
+
+    await this.updateForm(form, account, oldForm, null);
+  }
+
   onRecordSave = async ({record, account}) => {
     await this.updateRecord(record, account);
   }
@@ -263,34 +303,82 @@ export default class {
     await this.updateAudio(audio, account);
   }
 
+  onChangesetSave = async ({changeset, account}) => {
+    await this.updateChangeset(changeset, account);
+  }
+
   onChoiceListSave = async ({object}) => {
+    await this.updateChoiceList(object, acccount);
   }
 
   onClassificationSetSave = async ({object}) => {
+    await this.updateClassificationSet(object, acccount);
   }
 
   onProjectSave = async ({object}) => {
+    await this.updateProject(object, acccount);
+  }
+
+  onRoleSave = async ({object}) => {
+    await this.updateRole(object, acccount);
+  }
+
+  onMembershipSave = async ({object}) => {
+    await this.updateMembership(object, acccount);
   }
 
   async updatePhoto(object, account) {
-    await this.updateObject(SchemaMap.photo(object), 'photos');
+    const values = SchemaMap.photo(object);
+
+    values.file = this.formatPhotoURL(values.access_key);
+
+    await this.updateObject(values, 'photos');
   }
 
   async updateVideo(object, account) {
-    await this.updateObject(SchemaMap.video(object), 'videos');
+    const values = SchemaMap.video(object);
+
+    values.file = this.formatVideoURL(values.access_key);
+
+    await this.updateObject(values, 'videos');
   }
 
   async updateAudio(object, account) {
-    await this.updateObject(SchemaMap.audio(object), 'audio');
+    const values = SchemaMap.audio(object);
+
+    values.file = this.formatAudioURL(values.access_key);
+
+    await this.updateObject(values, 'audio');
+  }
+
+  async updateChangeset(object, account) {
+    await this.updateObject(SchemaMap.changeset(object), 'changesets');
   }
 
   async updateProject(object, account) {
     await this.updateObject(SchemaMap.project(object), 'projects');
   }
 
-  async updateMemberships(object, account) {
+  async updateMembership(object, account) {
     await this.updateObject(SchemaMap.membership(object), 'memberships');
   }
+
+  async updateRole(object, account) {
+    await this.updateObject(SchemaMap.role(object), 'roles');
+  }
+
+  async updateForm(object, account) {
+    await this.updateObject(SchemaMap.form(object), 'forms');
+  }
+
+  async updateChoiceList(object, account) {
+    await this.updateObject(SchemaMap.choiceList(object), 'choice_lists');
+  }
+
+  async updateClassificationSet(object, account) {
+    await this.updateObject(SchemaMap.classificationSet(object), 'classification_sets');
+  }
+
 
   async updateObject(values, table) {
     try {
@@ -311,20 +399,36 @@ export default class {
     this.tableNames = rows.map(o => o.name);
   }
 
+  baseMediaURL = () => {
+  }
+
+  formatPhotoURL = (id) => {
+    return `${ this.baseMediaURL }/photos/${ id }.jpg`;
+  }
+
+  formatVideoURL = (id) => {
+    return `${ this.baseMediaURL }/videos/${ id }.mp4`;
+  }
+
+  formatAudioURL = (id) => {
+    return `${ this.baseMediaURL }/audio/${ id }.m4a`;
+  }
+
   setupOptions() {
+    this.baseMediaURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
+
     this.recordValueOptions = {
       disableArrays: this.disableArrays,
 
       mediaURLFormatter: (mediaValue) => {
-        const baseURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
 
         return mediaValue.items.map((item) => {
           if (mediaValue.element.isPhotoElement) {
-            return `${ baseURL }/photos/${ item.mediaID }.jpg`;
+            return this.formatPhotoURL(item.mediaID);
           } else if (mediaValue.element.isVideoElement) {
-            return `${ baseURL }/videos/${ item.mediaID }.mp4`;
+            return this.formatVideoURL(item.mediaID);
           } else if (mediaValue.element.isAudioElement) {
-            return `${ baseURL }/audio/${ item.mediaID }.m4a`;
+            return this.formatAudioURL(item.mediaID);
           }
 
           return null;
@@ -332,16 +436,14 @@ export default class {
       },
 
       mediaViewURLFormatter: (mediaValue) => {
-        const baseURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://web.fulcrumapp.com';
-
         const ids = mediaValue.items.map(o => o.mediaID);
 
         if (mediaValue.element.isPhotoElement) {
-          return `${ baseURL }/photos/view?photos=${ ids }`;
+          return `${ this.baseMediaURL }/photos/view?photos=${ ids }`;
         } else if (mediaValue.element.isVideoElement) {
-          return `${ baseURL }/videos/view?videos=${ ids }`;
+          return `${ this.baseMediaURL }/videos/view?videos=${ ids }`;
         } else if (mediaValue.element.isAudioElement) {
-          return `${ baseURL }/audio/view?audio=${ ids }`;
+          return `${ this.baseMediaURL }/audio/view?audio=${ ids }`;
         }
 
         return null;
@@ -517,5 +619,109 @@ export default class {
                         .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
 
     await this.run(sql);
+  }
+
+  async setupSystemTables(account) {
+    const progress = (name, index) => {
+      this.updateStatus(name.green + ' : ' + index.toString().red);
+    };
+
+    await account.findEachPhoto({}, async (photo, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Photos', index);
+      }
+
+      await this.updatePhoto(photo, account);
+    });
+
+    console.log('');
+
+    await account.findEachVideo({}, async (video, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Videos', index);
+      }
+
+      await this.updateVideo(video, account);
+    });
+
+    console.log('');
+
+    await account.findEachAudio({}, async (audio, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Audio', index);
+      }
+
+      await this.updateAudio(audio, account);
+    });
+
+    console.log('');
+
+    await account.findEachChangeset({}, async (changeset, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Changesets', index);
+      }
+
+      await this.updateChangeset(changeset, account);
+    });
+
+    console.log('');
+
+    await account.findEachRole({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Roles', index);
+      }
+
+      await this.updateRole(object, account);
+    });
+
+    console.log('');
+
+    await account.findEachProject({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Projects', index);
+      }
+
+      await this.updateProject(object, account);
+    });
+
+    console.log('');
+
+    await account.findEachForm({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Forms', index);
+      }
+
+      await this.updateForm(object, account);
+    });
+
+    console.log('');
+
+    await account.findEachMembership({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Memberships', index);
+      }
+
+      await this.updateMembership(object, account);
+    });
+
+    console.log('');
+
+    await account.findEachChoiceList({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Choice Lists', index);
+      }
+
+      await this.updateChoiceList(object, account);
+    });
+
+    console.log('');
+
+    await account.findEachClassificationSet({}, async (object, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Classification Sets', index);
+      }
+
+      await this.updateClassificationSet(object, account);
+    });
   }
 }

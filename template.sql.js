@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.changesets (
   id bigserial NOT NULL,
   row_id bigint NOT NULL,
   row_resource_id text NOT NULL,
-  form_id bigint NOT NULL,
+  form_id bigint NULL,
   form_resource_id text,
   metadata text,
   closed_at timestamp with time zone,
@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.changesets (
   number_of_deletes bigint,
   metadata_index_text text,
   metadata_index tsvector,
+  bounding_box geometry(Geometry, 4326),
   CONSTRAINT changesets_pkey PRIMARY KEY (id)
 );
 
@@ -72,6 +73,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.choice_lists (
   updated_by_resource_id text,
   created_at timestamp with time zone NOT NULL,
   updated_at timestamp with time zone NOT NULL,
+  deleted_at timestamp with time zone,
   CONSTRAINT choice_lists_pkey PRIMARY KEY (id)
 );
 
@@ -89,6 +91,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.classification_sets (
   updated_by_resource_id text,
   created_at timestamp with time zone NOT NULL,
   updated_at timestamp with time zone NOT NULL,
+  deleted_at timestamp with time zone,
   CONSTRAINT classification_sets_pkey PRIMARY KEY (id)
 );
 
@@ -131,6 +134,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.forms (
   image text,
   projects_enabled boolean NOT NULL,
   assignment_enabled boolean NOT NULL,
+  deleted_at timestamp with time zone,
   CONSTRAINT forms_pkey PRIMARY KEY (id)
 );
 
@@ -138,7 +142,6 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.memberships (
   id bigserial NOT NULL,
   row_id bigint NOT NULL,
   row_resource_id text NOT NULL,
-  user_id bigint NOT NULL,
   user_resource_id text,
   first_name text,
   last_name text,
@@ -146,10 +149,10 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.memberships (
   email text,
   role_id bigint NOT NULL,
   role_resource_id text NOT NULL,
-  role_name text NOT NULL,
   status text,
   created_at timestamp with time zone NOT NULL,
   updated_at timestamp with time zone NOT NULL,
+  deleted_at timestamp with time zone,
   CONSTRAINT memberships_pkey PRIMARY KEY (id)
 );
 
@@ -236,6 +239,7 @@ CREATE TABLE IF NOT EXISTS __SCHEMA__.roles (
   can_export_records boolean NOT NULL DEFAULT false,
   can_run_reports boolean NOT NULL DEFAULT false,
   can_manage_authorizations boolean NOT NULL DEFAULT false,
+  deleted_at timestamp with time zone,
   CONSTRAINT roles_pkey PRIMARY KEY (id)
 );
 
@@ -342,7 +346,8 @@ SELECT
   number_of_creates AS number_of_creates,
   number_of_updates AS number_of_updates,
   number_of_deletes AS number_of_deletes,
-  metadata_index AS metadata_index
+  metadata_index AS metadata_index,
+  bounding_box AS bounding_box
 FROM __SCHEMA__.changesets;
 
 DROP VIEW IF EXISTS __VIEW_SCHEMA__.choice_lists_view;
@@ -357,7 +362,8 @@ SELECT
   created_by_resource_id AS created_by_id,
   updated_by_resource_id AS updated_by_id,
   created_at AS created_at,
-  updated_at AS updated_at
+  updated_at AS updated_at,
+  deleted_at AS deleted_at
 FROM __SCHEMA__.choice_lists;
 
 DROP VIEW IF EXISTS __VIEW_SCHEMA__.classification_sets_view;
@@ -372,7 +378,8 @@ SELECT
   created_by_resource_id AS created_by_id,
   updated_by_resource_id AS updated_by_id,
   created_at AS created_at,
-  updated_at AS updated_at
+  updated_at AS updated_at,
+  deleted_at AS deleted_at
 FROM __SCHEMA__.classification_sets;
 
 DROP VIEW IF EXISTS __VIEW_SCHEMA__.forms_view;
@@ -391,6 +398,7 @@ SELECT
   updated_by_resource_id AS updated_by_id,
   created_at AS created_at,
   updated_at AS updated_at,
+  deleted_at AS deleted_at,
   auto_assign AS auto_assign,
   title_field_keys AS title_field_keys,
   hidden_on_dashboard AS hidden_on_dashboard,
@@ -406,18 +414,20 @@ DROP VIEW IF EXISTS __VIEW_SCHEMA__.memberships_view;
 
 CREATE OR REPLACE VIEW __VIEW_SCHEMA__.memberships_view AS
 SELECT
-  row_resource_id AS membership_id,
-  user_resource_id AS user_id,
-  first_name AS first_name,
-  last_name AS last_name,
-  name AS name,
-  email AS email,
-  role_resource_id AS role_id,
-  role_name AS role_name,
-  status AS status,
-  created_at AS created_at,
-  updated_at AS updated_at
-FROM __SCHEMA__.memberships;
+  memberships.row_resource_id AS membership_id,
+  memberships.user_resource_id AS user_id,
+  memberships.first_name AS first_name,
+  memberships.last_name AS last_name,
+  memberships.name AS name,
+  memberships.email AS email,
+  memberships.role_resource_id AS role_id,
+  roles.name AS role_name,
+  memberships.status AS status,
+  memberships.created_at AS created_at,
+  memberships.updated_at AS updated_at,
+  memberships.deleted_at AS deleted_at
+FROM __SCHEMA__.memberships memberships
+LEFT OUTER JOIN __SCHEMA__.roles roles ON memberships.role_resource_id = roles.row_resource_id;
 
 DROP VIEW IF EXISTS __VIEW_SCHEMA__.photos_view;
 
@@ -460,7 +470,8 @@ SELECT
   description AS description,
   created_by_resource_id AS created_by_id,
   created_at AS created_at,
-  updated_at AS updated_at
+  updated_at AS updated_at,
+  deleted_at AS deleted_at
 FROM __SCHEMA__.projects;
 
 DROP VIEW IF EXISTS __VIEW_SCHEMA__.roles_view;
@@ -474,6 +485,7 @@ SELECT
   updated_by_resource_id AS updated_by_id,
   created_at AS created_at,
   updated_at AS updated_at,
+  deleted_at AS deleted_at,
   is_system AS is_system,
   is_default AS is_default,
   can_manage_subscription AS can_manage_subscription,

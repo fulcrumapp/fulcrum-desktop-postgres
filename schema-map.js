@@ -6,6 +6,10 @@ export default class SchemaMap {
   // * force 2d
   // * remove duplicate vertices
   static geomFromGeoJSON(geojsonGeometry) {
+    if (geojsonGeometry == null) {
+      return null;
+    }
+
     return `ST_RemoveRepeatedPoints(ST_Force2D(ST_GeomFromText(${ pgformat('%L', wkt.stringify(geojsonGeometry)) }, 4326)))`;
   }
 
@@ -13,6 +17,10 @@ export default class SchemaMap {
   // * force 2d
   // * remove duplicate vertices
   static multiGeomFromGeoJSON(geojsonGeometry) {
+    if (geojsonGeometry == null) {
+      return null;
+    }
+
     return `ST_RemoveRepeatedPoints(ST_Force2D(ST_Multi(ST_GeomFromText(${ pgformat('%L', wkt.stringify(geojsonGeometry)) }, 4326))))`;
   }
 
@@ -135,14 +143,146 @@ export default class SchemaMap {
     };
   }
 
-  project(row) {
+  static changeset(row) {
+    const geometry = this.geomFromGeoJSON(row.boundingBoxAsGeoJSON);
+
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      form_id: row._formRowID,
+      form_resource_id: row._formID,
+      metadata: row._metadata,
+      closed_at: row._closedAt,
+      created_by_id: row._createdByRowID,
+      created_by_resource_id: row._createdByID,
+      updated_by_id: row._updatedByRowID,
+      updated_by_resource_id: row._updatedByID,
+      closed_by_id: row._closedByRowID,
+      closed_by_resource_id: row._closedByID,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      min_lat: row._minLat,
+      max_lat: row._maxLat,
+      min_lon: row._minLon,
+      max_lon: row._maxLon,
+      number_of_changes: row._numberOfChanges,
+      number_of_creates: row._numberOfCreates,
+      number_of_updates: row._numberOfUpdated,
+      number_of_deletes: row._numberOfDeletes,
+      metadata_index_text: row._metadataIndexText,
+      metadata_index: {raw: `to_tsvector(${ pgformat('%L', row._metadataIndexText) })`},
+      bounding_box: geometry ? {raw: this.geomFromGeoJSON(row.boundingBoxAsGeoJSON)} : null
+    };
+  }
+
+  static choiceList(row) {
     return {
       row_id: row.rowID,
       row_resource_id: row.id,
       name: row._name,
       description: row._description,
-      created_by_id: row._createdByRowID,
-      created_by_resource_id: row._createdByID,
+      version: row._version,
+      items: row._choicesJSON,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      deleted_at: row._deletedAt
+    };
+  }
+
+  static classificationSet(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      name: row._name,
+      description: row._description,
+      version: row._version,
+      items: row._itemsJSON,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      deleted_at: row._deletedAt
+    };
+  }
+
+  static form(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      name: row._name,
+      description: row._description,
+      version: row._version,
+      elements: row._elements,
+      status: row._status,
+      status_field: row._statusFieldJSON,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      deleted_at: row._deletedAt,
+      auto_assign: row._autoAssign,
+      title_field_keys: row._titleFieldKeys,
+      hidden_on_dashboard: row._hiddenOnDashboard,
+      geometry_types: row._geometryTypes,
+      geometry_required: row._geometryRequired,
+      script: row._script,
+      image: row._image,
+      projects_enabled: !!row._projectEnabled,
+      assignment_enabled: !!row._assignmentEnabled
+    };
+  }
+
+  static project(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      name: row._name,
+      description: row._description,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      deleted_at: row._deletedAt
+    };
+  }
+
+  static role(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      name: row._name,
+      description: row._description,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      deleted_at: row._deletedAt,
+      is_system: row._isSystem,
+      is_default: row._isDefault,
+      can_manage_subscription: row.canManageSubscription,
+      can_update_organization: row.canUpdateOrganization,
+      can_manage_members: row.canManageMembers,
+      can_manage_roles: row.canManageRoles,
+      can_manage_apps: row.canManageApps,
+      can_manage_projects: row.canManageProjects,
+      can_manage_choice_lists: row.canManageChoiceLists,
+      can_manage_classification_sets: row.canManageClassificationSets,
+      can_create_records: row.canCreateRecords,
+      can_update_records: row.canUpdateRecords,
+      can_delete_records: row.canDeleteRecords,
+      can_change_status: row.canChangeStatus,
+      can_change_project: row.canChangeProject,
+      can_assign_records: row.canAssignRecords,
+      can_import_records: row.canImportRecords,
+      can_export_records: row.canExportRecords,
+      can_run_reports: row.canRunReports
+    };
+  }
+
+  static membership(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      user_resource_id: row._userID,
+      first_name: row._firstName,
+      last_name: row._lastName,
+      name: (row._firstName || '') + ' ' + (row._lastName || ''),
+      email: row._email,
+      role_id: row._roleRowID,
+      role_resource_id: row._roleID,
+      status: row.status,
       created_at: row._createdAt,
       updated_at: row._updatedAt,
       deleted_at: row._deletedAt
