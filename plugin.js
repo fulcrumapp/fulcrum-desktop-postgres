@@ -188,7 +188,7 @@ export default class {
       this.pgCustomModule = require(fulcrum.args.pgCustomModule);
     }
 
-    if (fulcrum.args.arrays === false) {
+    if (fulcrum.args.pgArrays === false) {
       this.disableArrays = true;
     }
 
