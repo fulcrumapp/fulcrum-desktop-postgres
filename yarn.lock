@@ -1034,9 +1034,9 @@ fulcrum-desktop-plugin@^1.4.0:
     babel-preset-env "^1.4.0"
     babel-preset-stage-0 "^6.24.1"
 
-fulcrum-schema@fulcrumapp/fulcrum-schema#fulcrum-desktop:
-  version "1.17.0"
-  resolved "https://codeload.github.com/fulcrumapp/fulcrum-schema/tar.gz/d769b93a314020de7cd2fa95060964e69fbd99cc"
+fulcrum-schema@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/fulcrum-schema/-/fulcrum-schema-2.0.0.tgz#5dc32ea995e7ced46d55d139ffddb8ab9915d971"
   dependencies:
     babel-polyfill "^6.9.0"
     sqldiff "0.0.19"
