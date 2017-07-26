@@ -379,7 +379,7 @@ export default class {
     await this.updateObject(SchemaMap.role(object), 'roles');
   }
 
-  async updateForm(object, account) {
+  async updateFormObject(object, account) {
     await this.updateObject(SchemaMap.form(object), 'forms');
   }
 
@@ -505,6 +505,8 @@ export default class {
     if (this.pgCustomModule && this.pgCustomModule.shouldUpdateForm && !this.pgCustomModule.shouldUpdateForm({form, account})) {
       return;
     }
+
+    await this.updateFormObject(object, account);
 
     if (!this.rootTableExists(form) && newForm != null) {
       oldForm = null;
@@ -712,7 +714,7 @@ export default class {
         progress('Forms', index);
       }
 
-      await this.updateForm(object, account);
+      await this.updateFormObject(object, account);
     });
 
     console.log('');

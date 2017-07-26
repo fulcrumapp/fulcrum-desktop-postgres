@@ -42,6 +42,10 @@ export default class SchemaMap {
     return null;
   }
 
+  static jsonValue(value) {
+    return value != null ? JSON.stringify(value) : null;
+  }
+
   static photo(row) {
     const hasLocation = row._latitude != null && row._longitude != null;
 
@@ -53,7 +57,7 @@ export default class SchemaMap {
       record_resource_id: row._recordID,
       form_id: row._formRowID,
       form_resource_id: row._formID,
-      exif: row._exif ? JSON.stringify(row._exif) : null,
+      exif: this.jsonValue(row._exif),
       file_size: row._fileSize,
       created_by_id: row._createdByRowID,
       created_by_resource_id: row._createdByID,
@@ -90,9 +94,9 @@ export default class SchemaMap {
       record_resource_id: row._recordID,
       form_id: row._formRowID,
       form_resource_id: row._formID,
-      metadata: row._metadata,
+      metadata: this.jsonValue(row._metadata),
       has_track: row._hasTrack,
-      track: row._trackJSON,
+      track: this.jsonValue(row._trackJSON),
       file_size: row._fileSize,
       created_by_id: row._createdByRowID,
       created_by_resource_id: row._createdByID,
@@ -122,9 +126,9 @@ export default class SchemaMap {
       record_resource_id: row._recordID,
       form_id: row._formRowID,
       form_resource_id: row._formID,
-      metadata: row._metadata,
+      metadata: this.jsonValue(row._metadata),
       has_track: row._hasTrack,
-      track: row._trackJSON,
+      track: this.jsonValue(row._trackJSON),
       file_size: row._fileSize,
       created_by_id: row._createdByRowID,
       created_by_resource_id: row._createdByID,
@@ -151,7 +155,7 @@ export default class SchemaMap {
       row_resource_id: row.id,
       form_id: row._formRowID,
       form_resource_id: row._formID,
-      metadata: row._metadata,
+      metadata: this.jsonValue(row._metadata),
       closed_at: row._closedAt,
       created_by_id: row._createdByRowID,
       created_by_resource_id: row._createdByID,
@@ -182,7 +186,7 @@ export default class SchemaMap {
       name: row._name,
       description: row._description,
       version: row._version,
-      items: row._choicesJSON,
+      items: this.jsonValue(row._choicesJSON),
       created_at: row._createdAt,
       updated_at: row._updatedAt,
       deleted_at: row._deletedAt
@@ -196,7 +200,7 @@ export default class SchemaMap {
       name: row._name,
       description: row._description,
       version: row._version,
-      items: row._itemsJSON,
+      items: this.jsonValue(row._itemsJSON),
       created_at: row._createdAt,
       updated_at: row._updatedAt,
       deleted_at: row._deletedAt
@@ -210,16 +214,16 @@ export default class SchemaMap {
       name: row._name,
       description: row._description,
       version: row._version,
-      elements: row._elements,
+      elements: this.jsonValue(row._elements),
       status: row._status,
-      status_field: row._statusFieldJSON,
+      status_field: this.jsonValue(row._statusFieldJSON),
       created_at: row._createdAt,
       updated_at: row._updatedAt,
       deleted_at: row._deletedAt,
       auto_assign: row._autoAssign,
-      title_field_keys: row._titleFieldKeys,
+      title_field_keys: this.jsonValue(row._titleFieldKeys),
       hidden_on_dashboard: row._hiddenOnDashboard,
-      geometry_types: row._geometryTypes,
+      geometry_types: this.jsonValue(row._geometryTypes),
       geometry_required: row._geometryRequired,
       script: row._script,
       image: row._image,
