@@ -1,4 +1,11 @@
 export default `
+CREATE TABLE IF NOT EXISTS __SCHEMA__.migrations (
+  id bigserial NOT NULL,
+  text name,
+  created_at timestamp with time zone NOT NULL,
+  CONSTRAINT migrations_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS __SCHEMA__.audio (
   id bigserial NOT NULL,
   row_id bigint NOT NULL,

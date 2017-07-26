@@ -214,7 +214,7 @@ export default class SchemaMap {
       name: row._name,
       description: row._description,
       version: row._version,
-      elements: this.jsonValue(row._elements),
+      elements: this.jsonValue(row._elementsJSON),
       status: row._status,
       status_field: this.jsonValue(row._statusFieldJSON),
       created_at: row._createdAt,

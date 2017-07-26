@@ -236,6 +236,8 @@ export default class {
     this.pgdb = new Postgres({});
 
     this.setupOptions();
+
+    await this.maybeInitialize();
   }
 
   async deactivate() {
@@ -506,7 +508,7 @@ export default class {
       return;
     }
 
-    await this.updateFormObject(object, account);
+    await this.updateFormObject(form, account);
 
     if (!this.rootTableExists(form) && newForm != null) {
       oldForm = null;
@@ -746,5 +748,19 @@ export default class {
 
       await this.updateClassificationSet(object, account);
     });
+  }
+
+  async maybeInitialize() {
+    if (this.tableNames.indexOf('migrations') === -1) {
+      console.log('Inititalizing database...');
+
+      await this.setupDatabase();
+
+      const account = await fulcrum.fetchAccount(fulcrum.args.org);
+
+      console.log('Populating system tables...');
+
+      await this.setupSystemTables(account);
+    }
   }
 }
