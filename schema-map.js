@@ -46,6 +46,57 @@ export default class SchemaMap {
     return value != null ? JSON.stringify(value) : null;
   }
 
+  static record(row, values) {
+    // records are special since they're already table-ized in a different code path.
+    return {
+      row_id: row.rowID,
+      row_resource_id: values.record_resource_id,
+      form_id: row._formRowID,
+      form_resource_id: row.formID,
+      project_id: row._projectRowID,
+      project_resource_id: row._projectID,
+      assigned_to_id: row._assignedToRowID,
+      assigned_to_resource_id: row._assignedToID,
+      status: values.status,
+      latitude: values.latitude,
+      longitude: values.longitude,
+      created_at: values.created_at,
+      updated_at: values.updated_at,
+      version: values.version,
+      created_by_id: row._createdByRowID,
+      created_by_resource_id: row._createdByID,
+      updated_by_id: row._updatedByRowID,
+      updated_by_resource_id: row._updatedByID,
+      server_created_at: values.server_created_at,
+      server_updated_at: values.server_updated_at,
+      record_index_text: values.record_index_text,
+      record_index: values.record_index,
+      geometry: values.geometry,
+      altitude: values.altitude,
+      speed: values.speed,
+      course: values.course,
+      horizontal_accuracy: values.horizontal_accuracy,
+      vertical_accuracy: values.vertical_accuracy,
+      form_values: values.form_values,
+      changeset_id: row._changesetRowID,
+      changeset_resource_id: row._changesetID,
+      title: row.displayValue,
+      created_latitude: values.created_latitude,
+      created_longitude: values.created_longitude,
+      created_geometry: values.created_geometry,
+      created_altitude: values.created_altitude,
+      created_horizontal_accuracy: values.created_horizontal_accuracy,
+      updated_latitude: values.updated_latitude,
+      updated_longitude: values.updated_longitude,
+      updated_geometry: values.updated_geometry,
+      updated_altitude: values.updated_altitude,
+      updated_horizontal_accuracy: values.updated_horizontal_accuracy,
+      created_duration: values.created_duration,
+      updated_duration: values.updated_duration,
+      edited_duration: values.edited_duration
+    };
+  }
+
   static photo(row) {
     const hasLocation = row._latitude != null && row._longitude != null;
 

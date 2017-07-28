@@ -3,9 +3,11 @@ import { format } from 'util';
 import PostgresSchema from './schema';
 import { PostgresRecordValues, Postgres } from 'fulcrum';
 import snake from 'snake-case';
-import template from './template.sql';
 import templateDrop from './template.drop.sql';
 import SchemaMap from './schema-map';
+
+import version001 from './version-001.sql';
+import version002 from './version-002.sql';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -13,6 +15,10 @@ const POSTGRES_CONFIG = {
   port: 5432,
   max: 10,
   idleTimeoutMillis: 30000
+};
+
+const MIGRATIONS = {
+  '002': version002
 };
 
 export default class {
@@ -321,24 +327,24 @@ export default class {
     await this.updateChangeset(changeset, account);
   }
 
-  onChoiceListSave = async ({object, account}) => {
-    await this.updateChoiceList(object, account);
+  onChoiceListSave = async ({choiceList, account}) => {
+    await this.updateChoiceList(choiceList, account);
   }
 
-  onClassificationSetSave = async ({object, account}) => {
-    await this.updateClassificationSet(object, account);
+  onClassificationSetSave = async ({classificationSet, account}) => {
+    await this.updateClassificationSet(classificationSet, account);
   }
 
-  onProjectSave = async ({object, account}) => {
-    await this.updateProject(object, account);
+  onProjectSave = async ({project, account}) => {
+    await this.updateProject(project, account);
   }
 
-  onRoleSave = async ({object, account}) => {
-    await this.updateRole(object, account);
+  onRoleSave = async ({role, account}) => {
+    await this.updateRole(role, account);
   }
 
-  onMembershipSave = async ({object, account}) => {
-    await this.updateMembership(object, account);
+  onMembershipSave = async ({membership, account}) => {
+    await this.updateMembership(membership, account);
   }
 
   async updatePhoto(object, account) {
@@ -396,8 +402,8 @@ export default class {
 
   async updateObject(values, table) {
     try {
-      const deleteStatement = this.pgdb.deleteStatement(table, {row_resource_id: values.row_resource_id});
-      const insertStatement = this.pgdb.insertStatement(table, values, {pk: 'id'});
+      const deleteStatement = this.pgdb.deleteStatement('system_' + table, {row_resource_id: values.row_resource_id});
+      const insertStatement = this.pgdb.insertStatement('system_' + table, values, {pk: 'id'});
 
       const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
 
@@ -485,6 +491,10 @@ export default class {
     const statements = PostgresRecordValues.updateForRecordStatements(this.pgdb, record, this.recordValueOptions);
 
     await this.run(statements.map(o => o.sql).join('\n'));
+
+    const systemValues = PostgresRecordValues.systemColumnValuesForFeature(record, null, record, this.recordValueOptions);
+
+    await this.updateObject(SchemaMap.record(record, systemValues), 'records');
   }
 
   rootTableExists = (form) => {
@@ -633,17 +643,16 @@ export default class {
   }
 
   async dropSystemTables() {
-    const sql = templateDrop.replace(/__SCHEMA__/g, 'public')
-                            .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
-
-    await this.run(sql);
+    await this.run(this.prepareMigrationScript(templateDrop));
   }
 
   async setupDatabase() {
-    const sql = template.replace(/__SCHEMA__/g, 'public')
-                        .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
+    await this.run(this.prepareMigrationScript(version001));
+  }
 
-    await this.run(sql);
+  prepareMigrationScript(sql) {
+    return sql.replace(/__SCHEMA__/g, 'public')
+              .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
   }
 
   async setupSystemTables(account) {
@@ -659,8 +668,6 @@ export default class {
       await this.updatePhoto(photo, account);
     });
 
-    console.log('');
-
     await account.findEachVideo({}, async (video, {index}) => {
       if (++index % 10 === 0) {
         progress('Videos', index);
@@ -668,8 +675,6 @@ export default class {
 
       await this.updateVideo(video, account);
     });
-
-    console.log('');
 
     await account.findEachAudio({}, async (audio, {index}) => {
       if (++index % 10 === 0) {
@@ -679,8 +684,6 @@ export default class {
       await this.updateAudio(audio, account);
     });
 
-    console.log('');
-
     await account.findEachChangeset({}, async (changeset, {index}) => {
       if (++index % 10 === 0) {
         progress('Changesets', index);
@@ -688,8 +691,6 @@ export default class {
 
       await this.updateChangeset(changeset, account);
     });
-
-    console.log('');
 
     await account.findEachRole({}, async (object, {index}) => {
       if (++index % 10 === 0) {
@@ -699,8 +700,6 @@ export default class {
       await this.updateRole(object, account);
     });
 
-    console.log('');
-
     await account.findEachProject({}, async (object, {index}) => {
       if (++index % 10 === 0) {
         progress('Projects', index);
@@ -708,8 +707,6 @@ export default class {
 
       await this.updateProject(object, account);
     });
-
-    console.log('');
 
     await account.findEachForm({}, async (object, {index}) => {
       if (++index % 10 === 0) {
@@ -719,8 +716,6 @@ export default class {
       await this.updateFormObject(object, account);
     });
 
-    console.log('');
-
     await account.findEachMembership({}, async (object, {index}) => {
       if (++index % 10 === 0) {
         progress('Memberships', index);
@@ -729,8 +724,6 @@ export default class {
       await this.updateMembership(object, account);
     });
 
-    console.log('');
-
     await account.findEachChoiceList({}, async (object, {index}) => {
       if (++index % 10 === 0) {
         progress('Choice Lists', index);
@@ -738,8 +731,6 @@ export default class {
 
       await this.updateChoiceList(object, account);
     });
-
-    console.log('');
 
     await account.findEachClassificationSet({}, async (object, {index}) => {
       if (++index % 10 === 0) {
@@ -751,16 +742,55 @@ export default class {
   }
 
   async maybeInitialize() {
+    const account = await fulcrum.fetchAccount(fulcrum.args.org);
+
     if (this.tableNames.indexOf('migrations') === -1) {
       console.log('Inititalizing database...');
 
       await this.setupDatabase();
+    }
 
-      const account = await fulcrum.fetchAccount(fulcrum.args.org);
+    await this.maybeRunMigrations(account);
+  }
+
+  async maybeRunMigrations(account) {
+    this.migrations = (await this.run('SELECT name FROM migrations')).map(o => o.name);
+
+    await this.maybeRunMigration('002', account);
+  }
+
+  async maybeRunMigration(version, account) {
+    if (this.migrations.indexOf(version) === -1 && MIGRATIONS[version]) {
+      await this.run(this.prepareMigrationScript(MIGRATIONS[version]));
 
       console.log('Populating system tables...');
 
       await this.setupSystemTables(account);
+      await this.populateRecords(account);
     }
+  }
+
+  async populateRecords(account) {
+    const forms = await account.findActiveForms({});
+
+    let index = 0;
+
+    for (const form of forms) {
+      index = 0;
+
+      await form.findEachRecord({}, async (record) => {
+        record.form = form;
+
+        if (++index % 10 === 0) {
+          this.progress(form.name, index);
+        }
+
+        await this.updateRecord(record, account, false);
+      });
+    }
+  }
+
+  progress = (name, index) => {
+    this.updateStatus(name.green + ' : ' + index.toString().red);
   }
 }

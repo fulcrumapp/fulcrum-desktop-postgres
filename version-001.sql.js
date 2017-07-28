@@ -1,10 +1,12 @@
 export default `
 CREATE TABLE IF NOT EXISTS __SCHEMA__.migrations (
   id bigserial NOT NULL,
-  text name,
-  created_at timestamp with time zone NOT NULL,
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT migrations_pkey PRIMARY KEY (id)
 );
+
+CREATE UNIQUE INDEX idx_migrations_name ON __SCHEMA__.migrations (name);
 
 CREATE TABLE IF NOT EXISTS __SCHEMA__.audio (
   id bigserial NOT NULL,
