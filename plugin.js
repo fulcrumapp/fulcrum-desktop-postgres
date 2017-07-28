@@ -321,24 +321,24 @@ export default class {
     await this.updateChangeset(changeset, account);
   }
 
-  onChoiceListSave = async ({object}) => {
-    await this.updateChoiceList(object, acccount);
+  onChoiceListSave = async ({object, account}) => {
+    await this.updateChoiceList(object, account);
   }
 
-  onClassificationSetSave = async ({object}) => {
-    await this.updateClassificationSet(object, acccount);
+  onClassificationSetSave = async ({object, account}) => {
+    await this.updateClassificationSet(object, account);
   }
 
-  onProjectSave = async ({object}) => {
-    await this.updateProject(object, acccount);
+  onProjectSave = async ({object, account}) => {
+    await this.updateProject(object, account);
   }
 
-  onRoleSave = async ({object}) => {
-    await this.updateRole(object, acccount);
+  onRoleSave = async ({object, account}) => {
+    await this.updateRole(object, account);
   }
 
-  onMembershipSave = async ({object}) => {
-    await this.updateMembership(object, acccount);
+  onMembershipSave = async ({object, account}) => {
+    await this.updateMembership(object, account);
   }
 
   async updatePhoto(object, account) {
