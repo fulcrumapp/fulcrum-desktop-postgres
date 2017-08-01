@@ -8,6 +8,7 @@ import SchemaMap from './schema-map';
 
 import version001 from './version-001.sql';
 import version002 from './version-002.sql';
+import version003 from './version-003.sql';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -18,7 +19,8 @@ const POSTGRES_CONFIG = {
 };
 
 const MIGRATIONS = {
-  '002': version002
+  '002': version002,
+  '003': version003
 };
 
 export default class {
@@ -757,16 +759,19 @@ export default class {
     this.migrations = (await this.run('SELECT name FROM migrations')).map(o => o.name);
 
     await this.maybeRunMigration('002', account);
+    await this.maybeRunMigration('003', account);
   }
 
   async maybeRunMigration(version, account) {
     if (this.migrations.indexOf(version) === -1 && MIGRATIONS[version]) {
       await this.run(this.prepareMigrationScript(MIGRATIONS[version]));
 
-      console.log('Populating system tables...');
+      if (version === '002') {
+        console.log('Populating system tables...');
 
-      await this.setupSystemTables(account);
-      await this.populateRecords(account);
+        await this.setupSystemTables(account);
+        await this.populateRecords(account);
+      }
     }
   }
 
