@@ -5,6 +5,7 @@ import { PostgresRecordValues, Postgres } from 'fulcrum';
 import snake from 'snake-case';
 import templateDrop from './template.drop.sql';
 import SchemaMap from './schema-map';
+import * as api from 'fulcrum';
 
 import version001 from './version-001.sql';
 import version002 from './version-002.sql';
@@ -194,6 +195,8 @@ export default class {
 
     if (fulcrum.args.pgCustomModule) {
       this.pgCustomModule = require(fulcrum.args.pgCustomModule);
+      this.pgCustomModule.api = api;
+      this.pgCustomModule.app = fulcrum;
     }
 
     if (fulcrum.args.pgArrays === false) {
@@ -281,11 +284,11 @@ export default class {
   }
 
   onSyncStart = async ({account, tasks}) => {
-    this.invokeBeforeFunction();
+    await this.invokeBeforeFunction();
   }
 
   onSyncFinish = async ({account}) => {
-    this.invokeAfterFunction();
+    await this.invokeAfterFunction();
   }
 
   onFormSave = async ({form, account, oldForm, newForm}) => {
@@ -582,11 +585,17 @@ export default class {
     if (fulcrum.args.pgBeforeFunction) {
       await this.run(format('SELECT %s();', fulcrum.args.pgBeforeFunction));
     }
+    if (this.pgCustomModule && this.pgCustomModule.beforeSync) {
+      await this.pgCustomModule.beforeSync();
+    }
   }
 
   async invokeAfterFunction() {
     if (fulcrum.args.pgAfterFunction) {
       await this.run(format('SELECT %s();', fulcrum.args.pgAfterFunction));
+    }
+    if (this.pgCustomModule && this.pgCustomModule.afterSync) {
+      await this.pgCustomModule.afterSync();
     }
   }
 
