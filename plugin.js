@@ -10,6 +10,7 @@ import * as api from 'fulcrum';
 import version001 from './version-001.sql';
 import version002 from './version-002.sql';
 import version003 from './version-003.sql';
+import version004 from './version-004.sql';
 
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
@@ -21,7 +22,8 @@ const POSTGRES_CONFIG = {
 
 const MIGRATIONS = {
   '002': version002,
-  '003': version003
+  '003': version003,
+  '004': version004
 };
 
 export default class {
@@ -769,6 +771,7 @@ export default class {
 
     await this.maybeRunMigration('002', account);
     await this.maybeRunMigration('003', account);
+    await this.maybeRunMigration('004', account);
   }
 
   async maybeRunMigration(version, account) {
