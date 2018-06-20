@@ -77,6 +77,10 @@ export default class {
           required: true,
           type: 'string'
         },
+        pgForm: {
+          desc: 'the form ID to rebuild',
+          type: 'string'
+        },
         pgReportBaseUrl: {
           desc: 'report URL base',
           type: 'string'
@@ -156,6 +160,10 @@ export default class {
       const forms = await account.findActiveForms({});
 
       for (const form of forms) {
+        if (fulcrum.args.pgForm && form.id !== fulcrum.args.pgForm) {
+          continue;
+        }
+
         if (fulcrum.args.pgRebuildViewsOnly) {
           await this.rebuildFriendlyViews(form, account);
         } else {
@@ -408,16 +416,12 @@ export default class {
 
 
   async updateObject(values, table) {
-    try {
-      const deleteStatement = this.pgdb.deleteStatement('system_' + table, {row_resource_id: values.row_resource_id});
-      const insertStatement = this.pgdb.insertStatement('system_' + table, values, {pk: 'id'});
+    const deleteStatement = this.pgdb.deleteStatement('system_' + table, {row_resource_id: values.row_resource_id});
+    const insertStatement = this.pgdb.insertStatement('system_' + table, values, {pk: 'id'});
 
-      const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
+    const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
 
-      await this.run(sql);
-    } catch (ex) {
-      console.error(ex);
-    }
+    await this.run(sql);
   }
 
   reloadTableList = async () => {
@@ -541,10 +545,12 @@ export default class {
 
     await this.run(statements.join('\n'));
 
-    await this.createFriendlyView(form, null);
+    if (newForm) {
+      await this.createFriendlyView(form, null);
 
-    for (const repeatable of form.elementsOfType('Repeatable')) {
-      await this.createFriendlyView(form, repeatable);
+      for (const repeatable of form.elementsOfType('Repeatable')) {
+        await this.createFriendlyView(form, repeatable);
+      }
     }
   }
 
@@ -552,12 +558,10 @@ export default class {
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('DROP VIEW IF EXISTS %s.%s;', this.pgdb.ident(this.dataSchema), this.pgdb.ident(viewName)));
+      await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.pgdb.ident(this.dataSchema), this.pgdb.ident(viewName)));
     } catch (ex) {
-      if (fulcrum.args.debug) {
-        console.error(ex);
-      }
       // sometimes it doesn't exist
+      console.error(ex.message);
     }
   }
 
@@ -570,10 +574,8 @@ export default class {
                             this.pgdb.ident(viewName),
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
-      if (fulcrum.args.debug) {
-        console.error(ex);
-      }
       // sometimes it doesn't exist
+      console.error(ex);
     }
   }
 
