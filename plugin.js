@@ -12,6 +12,8 @@ import version002 from './version-002.sql';
 import version003 from './version-003.sql';
 import version004 from './version-004.sql';
 
+const MAX_IDENTIFIER_LENGTH = 63;
+
 const POSTGRES_CONFIG = {
   database: 'fulcrumapp',
   host: 'localhost',
@@ -179,6 +181,10 @@ export default class {
     } else {
       console.error('Unable to find account', fulcrum.args.org);
     }
+  }
+
+  escapeIdentifier(identifier) {
+    return identifier && this.pgdb.ident(identifier.substring(0, MAX_IDENTIFIER_LENGTH));
   }
 
   get useSyncEvents() {
@@ -543,7 +549,9 @@ export default class {
       await this.dropFriendlyView(form, repeatable);
     }
 
-    await this.run(statements.join('\n'));
+    await this.run(['BEGIN TRANSACTION;',
+                    ...statements,
+                    'COMMIT TRANSACTION;'].join('\n'));
 
     if (newForm) {
       await this.createFriendlyView(form, null);
@@ -558,7 +566,7 @@ export default class {
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.pgdb.ident(this.dataSchema), this.pgdb.ident(viewName)));
+      await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.escapeIdentifier(this.dataSchema), this.escapeIdentifier(viewName)));
     } catch (ex) {
       // sometimes it doesn't exist
       console.error(ex.message);
@@ -570,8 +578,8 @@ export default class {
 
     try {
       await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
-                            this.pgdb.ident(this.dataSchema),
-                            this.pgdb.ident(viewName),
+                            this.escapeIdentifier(this.dataSchema),
+                            this.escapeIdentifier(viewName),
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
       // sometimes it doesn't exist
