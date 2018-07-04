@@ -427,7 +427,12 @@ export default class {
 
     const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
 
-    await this.run(sql);
+    try {
+      await this.run(sql);
+    } catch (ex) {
+      this.integrityWarning(ex);
+      throw ex;
+    }
   }
 
   reloadTableList = async () => {
@@ -449,6 +454,39 @@ export default class {
 
   formatAudioURL = (id) => {
     return `${ this.baseMediaURL }/audio/${ id }.m4a`;
+  }
+
+  integrityWarning(ex) {
+    console.warn(`
+!! warning !!
+
+PostgreSQL database integrity issue encountered. Common sources of postgres database issues are:
+
+* Reinstalling Fulcrum Desktop and using an old postgres database without recreating
+  postgres database.
+* Deleting the internal application database and using an existing postgres database
+* Manually modifying the postgres database
+* Form name and repeatable data name combinations that exceeed the postgres limit of 63
+  characters. It's best to keep your form names within the limit. The "friendly view"
+  feature of the plugin derives the object names from the form and repeatable names.
+* Creating multiple apps in Fulcrum with the same name. This is generally OK, except
+  you will not be able to use the "friendly view" feature of the postgres plugin since
+  the view names are derived from the form names.
+
+Note: When reinstalling Fulcrum Desktop or "starting over" you need to drop and re-create
+the postgres database. The names of database objects are tied directly to the database
+objects in the internal application database.
+
+---------------------------------------------------------------------
+Report issues at https://github.com/fulcrumapp/fulcrum-desktop/issues
+---------------------------------------------------------------------
+Message: ${ ex.message }
+
+Stack:
+${ ex.stack }
+---------------------------------------------------------------------
+`.red
+    );
   }
 
   setupOptions() {
@@ -535,30 +573,35 @@ export default class {
       return;
     }
 
-    await this.updateFormObject(form, account);
+    try {
+      await this.updateFormObject(form, account);
 
-    if (!this.rootTableExists(form) && newForm != null) {
-      oldForm = null;
-    }
+      if (!this.rootTableExists(form) && newForm != null) {
+        oldForm = null;
+      }
 
-    const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule);
+      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule);
 
-    await this.dropFriendlyView(form, null);
-
-    for (const repeatable of form.elementsOfType('Repeatable')) {
-      await this.dropFriendlyView(form, repeatable);
-    }
-
-    await this.run(['BEGIN TRANSACTION;',
-                    ...statements,
-                    'COMMIT TRANSACTION;'].join('\n'));
-
-    if (newForm) {
-      await this.createFriendlyView(form, null);
+      await this.dropFriendlyView(form, null);
 
       for (const repeatable of form.elementsOfType('Repeatable')) {
-        await this.createFriendlyView(form, repeatable);
+        await this.dropFriendlyView(form, repeatable);
       }
+
+      await this.run(['BEGIN TRANSACTION;',
+                      ...statements,
+                      'COMMIT TRANSACTION;'].join('\n'));
+
+      if (newForm) {
+        await this.createFriendlyView(form, null);
+
+        for (const repeatable of form.elementsOfType('Repeatable')) {
+          await this.createFriendlyView(form, repeatable);
+        }
+      }
+    } catch (ex) {
+      this.integrityWarning(ex);
+      throw ex;
     }
   }
 
@@ -568,8 +611,7 @@ export default class {
     try {
       await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.escapeIdentifier(this.dataSchema), this.escapeIdentifier(viewName)));
     } catch (ex) {
-      // sometimes it doesn't exist
-      console.error(ex.message);
+      this.integrityWarning(ex);
     }
   }
 
@@ -583,7 +625,7 @@ export default class {
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
       // sometimes it doesn't exist
-      console.error(ex);
+      this.integrityWarning(ex);
     }
   }
 
