@@ -458,12 +458,14 @@ export default class {
 
   integrityWarning(ex) {
     console.warn(`
-!! warning !!
+-------------
+!! WARNING !!
+-------------
 
 PostgreSQL database integrity issue encountered. Common sources of postgres database issues are:
 
 * Reinstalling Fulcrum Desktop and using an old postgres database without recreating
-  postgres database.
+  the postgres database.
 * Deleting the internal application database and using an existing postgres database
 * Manually modifying the postgres database
 * Form name and repeatable data name combinations that exceeed the postgres limit of 63
@@ -480,7 +482,8 @@ objects in the internal application database.
 ---------------------------------------------------------------------
 Report issues at https://github.com/fulcrumapp/fulcrum-desktop/issues
 ---------------------------------------------------------------------
-Message: ${ ex.message }
+Message:
+${ ex.message }
 
 Stack:
 ${ ex.stack }
