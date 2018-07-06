@@ -17,7 +17,7 @@ END;
 $BODY$
 LANGUAGE 'plpgsql' IMMUTABLE STRICT;
 
-INSERT INTO migrations (name) VALUES ('004');
+INSERT INTO __SCHEMA__.migrations (name) VALUES ('004');
 
 COMMIT;
 `;

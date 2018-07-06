@@ -28,6 +28,8 @@ const MIGRATIONS = {
   '004': version004
 };
 
+const DEFAULT_SCHEMA = 'public';
+
 export default class {
   async task(cli) {
     return cli.command({
@@ -59,6 +61,10 @@ export default class {
         },
         pgSchema: {
           desc: 'postgresql schema',
+          type: 'string'
+        },
+        pgSchemaViews: {
+          desc: 'postgresql schema for the friendly views',
           type: 'string'
         },
         pgSyncEvents: {
@@ -250,13 +256,15 @@ export default class {
       fulcrum.on('membership:delete', this.onMembershipSave);
     }
 
+    this.viewSchema = fulcrum.args.pgSchemaViews || DEFAULT_SCHEMA;
+    this.dataSchema = fulcrum.args.pgSchema || DEFAULT_SCHEMA;
+
     // Fetch all the existing tables on startup. This allows us to special case the
     // creation of new tables even when the form isn't version 1. If the table doesn't
     // exist, we can pretend the form is version 1 so it creates all new tables instead
     // of applying a schema diff.
-    const rows = await this.run("SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'");
+    const rows = await this.run(`SELECT table_name AS name FROM information_schema.tables WHERE table_schema='${ this.dataSchema }'`);
 
-    this.dataSchema = fulcrum.args.pgSchema || 'public';
     this.tableNames = rows.map(o => o.name);
 
     // make a client so we can use it to build SQL statements
@@ -422,8 +430,8 @@ export default class {
 
 
   async updateObject(values, table) {
-    const deleteStatement = this.pgdb.deleteStatement('system_' + table, {row_resource_id: values.row_resource_id});
-    const insertStatement = this.pgdb.insertStatement('system_' + table, values, {pk: 'id'});
+    const deleteStatement = this.pgdb.deleteStatement(`${ this.dataSchema }.system_${table}`, {row_resource_id: values.row_resource_id});
+    const insertStatement = this.pgdb.insertStatement(`${ this.dataSchema }.system_${table}`, values, {pk: 'id'});
 
     const sql = [ deleteStatement.sql, insertStatement.sql ].join('\n');
 
@@ -436,7 +444,7 @@ export default class {
   }
 
   reloadTableList = async () => {
-    const rows = await this.run("SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public'");
+    const rows = await this.run(`SELECT table_name AS name FROM information_schema.tables WHERE table_schema='${ this.dataSchema }'`);
 
     this.tableNames = rows.map(o => o.name);
   }
@@ -496,6 +504,8 @@ ${ ex.stack }
     this.baseMediaURL = fulcrum.args.pgMediaBaseUrl ? fulcrum.args.pgMediaBaseUrl : 'https://api.fulcrumapp.com/api/v2';
 
     this.recordValueOptions = {
+      schema: this.dataSchema,
+
       disableArrays: this.disableArrays,
 
       valuesTransformer: this.pgCustomModule && this.pgCustomModule.valuesTransformer,
@@ -583,7 +593,7 @@ ${ ex.stack }
         oldForm = null;
       }
 
-      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule);
+      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule, this.dataSchema);
 
       await this.dropFriendlyView(form, null);
 
@@ -612,7 +622,7 @@ ${ ex.stack }
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.escapeIdentifier(this.dataSchema), this.escapeIdentifier(viewName)));
+      await this.run(format('DROP VIEW IF EXISTS %s.%s CASCADE;', this.escapeIdentifier(this.viewSchema), this.escapeIdentifier(viewName)));
     } catch (ex) {
       this.integrityWarning(ex);
     }
@@ -622,9 +632,10 @@ ${ ex.stack }
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
-                            this.escapeIdentifier(this.dataSchema),
+      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s.%s_view_full;',
+                            this.escapeIdentifier(this.viewSchema),
                             this.escapeIdentifier(viewName),
+                            this.escapeIdentifier(this.dataSchema),
                             PostgresRecordValues.tableNameWithForm(form, repeatable)));
     } catch (ex) {
       // sometimes it doesn't exist
@@ -719,8 +730,8 @@ ${ ex.stack }
   }
 
   prepareMigrationScript(sql) {
-    return sql.replace(/__SCHEMA__/g, 'public')
-              .replace(/__VIEW_SCHEMA__/g, this.dataSchema);
+    return sql.replace(/__SCHEMA__/g, this.dataSchema)
+              .replace(/__VIEW_SCHEMA__/g, this.viewSchema);
   }
 
   async setupSystemTables(account) {
@@ -822,7 +833,7 @@ ${ ex.stack }
   }
 
   async maybeRunMigrations(account) {
-    this.migrations = (await this.run('SELECT name FROM migrations')).map(o => o.name);
+    this.migrations = (await this.run(`SELECT name FROM ${ this.dataSchema }.migrations`)).map(o => o.name);
 
     await this.maybeRunMigration('002', account);
     await this.maybeRunMigration('003', account);

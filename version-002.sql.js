@@ -115,7 +115,7 @@ CREATE INDEX idx_records_server_created_at ON __SCHEMA__.records USING btree (se
 
 CREATE INDEX idx_records_status ON __SCHEMA__.records USING btree (status);
 
-INSERT INTO migrations (name) VALUES ('002');
+INSERT INTO __SCHEMA__.migrations (name) VALUES ('002');
 
 ALTER TABLE __SCHEMA__.audio RENAME TO system_audio;
 ALTER TABLE __SCHEMA__.changesets RENAME TO system_changesets;

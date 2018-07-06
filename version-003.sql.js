@@ -52,7 +52,7 @@ LEFT OUTER JOIN __SCHEMA__.system_memberships assignment ON records.assigned_to_
 LEFT OUTER JOIN __SCHEMA__.system_memberships created_by ON records.created_by_id = created_by.row_id
 LEFT OUTER JOIN __SCHEMA__.system_memberships updated_by ON records.updated_by_id = updated_by.row_id;
 
-INSERT INTO migrations (name) VALUES ('003');
+INSERT INTO __SCHEMA__.migrations (name) VALUES ('003');
 
 COMMIT;
 `;

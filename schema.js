@@ -5,7 +5,7 @@ import PGSchema from './postgres-schema';
 const {SchemaDiffer, Postgres} = sqldiff;
 
 export default class PostgresSchema {
-  static async generateSchemaStatements(account, oldForm, newForm, disableArrays, userModule) {
+  static async generateSchemaStatements(account, oldForm, newForm, disableArrays, userModule, tableSchema) {
     let oldSchema = null;
     let newSchema = null;
 
@@ -29,6 +29,10 @@ export default class PostgresSchema {
     const generator = new Postgres(differ, {afterTransform: null});
 
     generator.tablePrefix = 'account_' + account.rowID + '_';
+
+    if (tableSchema) {
+      generator.tableSchema = tableSchema;
+    }
 
     const statements = generator.generate();
 
