@@ -131,6 +131,12 @@ export default class {
           type: 'boolean',
           default: true
         },
+        pgSimpleTypes: {
+          desc: 'use simple types in the database that are more compatible with other applications (no tsvector, geometry, arrays)',
+          required: false,
+          type: 'boolean',
+          default: false
+        },
         pgSystemTablesOnly: {
           desc: 'only create the system records',
           required: false,
@@ -223,6 +229,10 @@ export default class {
 
     if (fulcrum.args.pgArrays === false) {
       this.disableArrays = true;
+    }
+
+    if (fulcrum.args.pgSimpleTypes === true) {
+      this.disableComplexTypes = true;
     }
 
     this.pool = new pg.Pool(options);
@@ -508,6 +518,8 @@ ${ ex.stack }
 
       disableArrays: this.disableArrays,
 
+      disableComplexTypes: this.disableComplexTypes,
+
       valuesTransformer: this.pgCustomModule && this.pgCustomModule.valuesTransformer,
 
       mediaURLFormatter: (mediaValue) => {
@@ -560,7 +572,8 @@ ${ ex.stack }
 
     await this.run(statements.map(o => o.sql).join('\n'));
 
-    const systemValues = PostgresRecordValues.systemColumnValuesForFeature(record, null, record, this.recordValueOptions);
+    const systemValues = PostgresRecordValues.systemColumnValuesForFeature(record, null, record, {...this.recordValueOptions,
+                                                                                                  disableComplexTypes: false});
 
     await this.updateObject(SchemaMap.record(record, systemValues), 'records');
   }
@@ -593,7 +606,8 @@ ${ ex.stack }
         oldForm = null;
       }
 
-      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays, this.pgCustomModule, this.dataSchema);
+      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays,
+        this.disableComplexTypes, this.pgCustomModule, this.dataSchema);
 
       await this.dropFriendlyView(form, null);
 

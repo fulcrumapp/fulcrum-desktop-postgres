@@ -5,11 +5,12 @@ import PGSchema from './postgres-schema';
 const {SchemaDiffer, Postgres} = sqldiff;
 
 export default class PostgresSchema {
-  static async generateSchemaStatements(account, oldForm, newForm, disableArrays, userModule, tableSchema) {
+  static async generateSchemaStatements(account, oldForm, newForm, disableArrays, disableComplexTypes, userModule, tableSchema) {
     let oldSchema = null;
     let newSchema = null;
 
     PGSchema.disableArrays = disableArrays;
+    PGSchema.disableComplexTypes = disableComplexTypes;
 
     if (userModule && userModule.updateSchema && !PGSchema._modified) {
       userModule.updateSchema(PGSchema);
