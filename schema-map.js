@@ -222,7 +222,7 @@ export default class SchemaMap {
       max_lon: row._maxLon,
       number_of_changes: row._numberOfChanges,
       number_of_creates: row._numberOfCreates,
-      number_of_updates: row._numberOfUpdated,
+      number_of_updates: row._numberOfUpdates,
       number_of_deletes: row._numberOfDeletes,
       metadata_index_text: row._metadataIndexText,
       metadata_index: {raw: `to_tsvector(${ pgformat('%L', row._metadataIndexText) })`},
