@@ -248,6 +248,7 @@ export default class {
       fulcrum.on('photo:save', this.onPhotoSave);
       fulcrum.on('video:save', this.onVideoSave);
       fulcrum.on('audio:save', this.onAudioSave);
+      fulcrum.on('signature:save', this.onSignatureSave);
       fulcrum.on('changeset:save', this.onChangesetSave);
       fulcrum.on('record:save', this.onRecordSave);
       fulcrum.on('record:delete', this.onRecordDelete);
@@ -368,6 +369,10 @@ export default class {
     await this.updateAudio(audio, account);
   }
 
+  onSignatureSave = async ({signature, account}) => {
+    await this.updateSignature(signature, account);
+  }
+
   onChangesetSave = async ({changeset, account}) => {
     await this.updateChangeset(changeset, account);
   }
@@ -414,6 +419,14 @@ export default class {
     values.file = this.formatAudioURL(values.access_key);
 
     await this.updateObject(values, 'audio');
+  }
+
+  async updateSignature(object, account) {
+    const values = SchemaMap.signature(object);
+
+    values.file = this.formatSignatureURL(values.access_key);
+
+    await this.updateObject(values, 'signatures');
   }
 
   async updateChangeset(object, account) {
@@ -483,6 +496,10 @@ export default class {
 
   formatAudioURL = (id) => {
     return `${ this.baseMediaURL }/audio/${ id }.m4a`;
+  }
+
+  formatSignatureURL = (id) => {
+    return `${ this.baseMediaURL }/signatures/${ id }.png`;
   }
 
   integrityWarning(ex) {
@@ -818,6 +835,14 @@ ${ ex.stack }
       }
 
       await this.updateAudio(audio, account);
+    });
+
+    await account.findEachSignature({}, async (signature, {index}) => {
+      if (++index % 10 === 0) {
+        progress('Signatures', index);
+      }
+
+      await this.updateSignature(signature, account);
     });
 
     await account.findEachChangeset({}, async (changeset, {index}) => {

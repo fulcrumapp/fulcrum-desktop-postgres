@@ -198,6 +198,30 @@ export default class SchemaMap {
     };
   }
 
+  static signature(row) {
+    return {
+      row_id: row.rowID,
+      row_resource_id: row.id,
+      access_key: row.id,
+      record_id: row._recordRowID,
+      record_resource_id: row._recordID,
+      form_id: row._formRowID,
+      form_resource_id: row._formID,
+      file_size: row._fileSize,
+      created_by_id: row._createdByRowID,
+      created_by_resource_id: row._createdByID,
+      updated_by_id: row._updatedByRowID,
+      updated_by_resource_id: row._updatedByID,
+      created_at: row._createdAt,
+      updated_at: row._updatedAt,
+      file: row._filePath,
+      content_type: row._contentType,
+      is_uploaded: row._isUploaded,
+      is_stored: row._isStored,
+      is_processed: row._isProcessed
+    };
+  }
+
   static changeset(row) {
     const geometry = this.geomFromGeoJSON(row.boundingBoxAsGeoJSON);
 
