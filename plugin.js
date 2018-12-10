@@ -218,7 +218,7 @@ export default class {
     return identifier.substring(0, MAX_IDENTIFIER_LENGTH);
   }
 
-  escapeIdentifier(identifier) {
+  escapeIdentifier = (identifier) => {
     return identifier && this.pgdb.ident(this.trimIdentifier(identifier));
   }
 
@@ -576,6 +576,10 @@ ${ ex.stack }
 
       disableArrays: this.disableArrays,
 
+      escapeIdentifier: this.escapeIdentifier,
+
+      // persistentTableNames: this.persistentTableNames,
+
       accountPrefix: this.useAccountPrefix ? 'account_' + this.account.rowID : null,
 
       calculatedFieldDateFormat: 'date',
@@ -718,10 +722,10 @@ ${ ex.stack }
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
+      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s;',
                             this.escapeIdentifier(this.viewSchema),
                             this.escapeIdentifier(viewName),
-                            PostgresRecordValues.tableNameWithForm(form, repeatable, this.recordValueOptions)));
+                            PostgresRecordValues.tableNameWithFormAndSchema(form, repeatable, this.recordValueOptions, '_view_full')));
     } catch (ex) {
       // sometimes it doesn't exist
       this.integrityWarning(ex);
