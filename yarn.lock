@@ -883,11 +883,7 @@ convert-source-map@^1.1.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/convert-source-map/-/convert-source-map-1.5.0.tgz#9acd70851c6d5dfdd93d9282e5edf94a03ff46b5"
 
-core-js@^2.4.0:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.4.1.tgz#4de911e667b0eae9124e34254b53aea6fc618d3e"
-
-core-js@^2.5.0:
+core-js@^2.4.0, core-js@^2.5.0:
   version "2.5.7"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.5.7.tgz#f972608ff0cead68b841a16a932d0b183791814e"
 
@@ -1054,11 +1050,11 @@ fulcrum-desktop-plugin@^1.4.0:
     babel-preset-stage-0 "^6.24.1"
 
 fulcrum-schema@^2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/fulcrum-schema/-/fulcrum-schema-2.0.4.tgz#09a30332f1d0a6e006f263bf5de5b0bf626b4fa4"
+  version "2.0.11"
+  resolved "https://registry.yarnpkg.com/fulcrum-schema/-/fulcrum-schema-2.0.11.tgz#d3bc1ca7235047acedb9748752d9089f035da9f5"
   dependencies:
     babel-polyfill "^6.9.0"
-    sqldiff "^0.0.21"
+    sqldiff "^0.0.27"
     underscore "^1.8.3"
 
 gauge@~2.7.1:
@@ -1793,9 +1789,9 @@ split@^1.0.0:
   dependencies:
     through "2"
 
-sqldiff@^0.0.21:
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/sqldiff/-/sqldiff-0.0.21.tgz#5ffdb090d18235179ad34a2ee01c541088367a24"
+sqldiff@^0.0.27:
+  version "0.0.27"
+  resolved "https://registry.yarnpkg.com/sqldiff/-/sqldiff-0.0.27.tgz#9a9980cc560f2e1dccd4c2223bac6ea71ffa8896"
   dependencies:
     underscore "^1.7.0"
 

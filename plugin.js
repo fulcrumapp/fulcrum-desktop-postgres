@@ -6,12 +6,13 @@ import snake from 'snake-case';
 import templateDrop from './template.drop.sql';
 import SchemaMap from './schema-map';
 import * as api from 'fulcrum';
-import { compact, difference } from 'lodash';
+import { compact, difference, padStart } from 'lodash';
 
 import version001 from './version-001.sql';
 import version002 from './version-002.sql';
 import version003 from './version-003.sql';
 import version004 from './version-004.sql';
+import version005 from './version-005.sql';
 
 const MAX_IDENTIFIER_LENGTH = 63;
 
@@ -26,10 +27,15 @@ const POSTGRES_CONFIG = {
 const MIGRATIONS = {
   '002': version002,
   '003': version003,
-  '004': version004
+  '004': version004,
+  '005': version005
 };
 
+const CURRENT_VERSION = 5;
+
 const DEFAULT_SCHEMA = 'public';
+
+const { log, warn, error } = fulcrum.logger.withContext('postgres');
 
 export default class {
   async task(cli) {
@@ -132,6 +138,18 @@ export default class {
           type: 'boolean',
           default: true
         },
+        // pgPersistentTableNames: {
+        //   desc: 'use the server id in the form table names',
+        //   required: false,
+        //   type: 'boolean',
+        //   default: false
+        // },
+        pgPrefix: {
+          desc: 'use the organization as a prefix in the object names',
+          required: false,
+          type: 'boolean',
+          default: true
+        },
         pgSimpleTypes: {
           desc: 'use simple types in the database that are more compatible with other applications (no tsvector, geometry, arrays)',
           required: false,
@@ -187,12 +205,12 @@ export default class {
           });
         }
 
-        console.log('');
+        log('');
       }
 
       await this.invokeAfterFunction();
     } else {
-      console.error('Unable to find account', fulcrum.args.org);
+      error('Unable to find account', fulcrum.args.org);
     }
   }
 
@@ -209,6 +227,8 @@ export default class {
   }
 
   async activate() {
+    this.account = await fulcrum.fetchAccount(fulcrum.args.org);
+
     const options = {
       ...POSTGRES_CONFIG,
       host: fulcrum.args.pgHost || POSTGRES_CONFIG.host,
@@ -239,6 +259,12 @@ export default class {
     if (fulcrum.args.pgSimpleTypes === true) {
       this.disableComplexTypes = true;
     }
+
+    // if (fulcrum.args.pgPersistentTableNames === true) {
+      // this.persistentTableNames = true;
+    // }
+
+    this.useAccountPrefix = (fulcrum.args.pgPrefix !== false);
 
     this.pool = new pg.Pool(options);
 
@@ -301,7 +327,7 @@ export default class {
     sql = sql.replace(/\0/g, '');
 
     if (fulcrum.args.debug) {
-      console.log(sql);
+      log(sql);
     }
 
     return new Promise((resolve, reject) => {
@@ -320,7 +346,11 @@ export default class {
   }
 
   tableName = (account, name) => {
-    return 'account_' + account.rowID + '_' + name;
+    if (this.useAccountPrefix) {
+      return 'account_' + account.rowID + '_' + name;
+    }
+
+    return name;
   }
 
   onSyncStart = async ({account, tasks}) => {
@@ -503,7 +533,7 @@ export default class {
   }
 
   integrityWarning(ex) {
-    console.warn(`
+    warn(`
 -------------
 !! WARNING !!
 -------------
@@ -545,6 +575,10 @@ ${ ex.stack }
       schema: this.dataSchema,
 
       disableArrays: this.disableArrays,
+
+      accountPrefix: this.useAccountPrefix ? 'account_' + this.account.rowID : null,
+
+      calculatedFieldDateFormat: 'date',
 
       disableComplexTypes: this.disableComplexTypes,
 
@@ -607,7 +641,7 @@ ${ ex.stack }
   }
 
   rootTableExists = (form) => {
-    return this.tableNames.indexOf(PostgresRecordValues.tableNameWithForm(form)) !== -1;
+    return this.tableNames.indexOf(PostgresRecordValues.tableNameWithForm(form, null, this.recordValueOptions)) !== -1;
   }
 
   recreateFormTables = async (form, account) => {
@@ -615,7 +649,7 @@ ${ ex.stack }
       await this.updateForm(form, account, this.formVersion(form), null);
     } catch (ex) {
       if (fulcrum.args.debug) {
-        console.error(sql);
+        error(ex);
       }
     }
 
@@ -634,8 +668,18 @@ ${ ex.stack }
         oldForm = null;
       }
 
-      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, this.disableArrays,
-        this.disableComplexTypes, this.pgCustomModule, this.dataSchema);
+      const options = {
+        disableArrays: this.disableArrays,
+        disableComplexTypes: this.disableComplexTypes,
+        userModule: this.pgCustomModule,
+        tableSchema: this.dataSchema,
+        calculatedFieldDateFormat: 'date',
+        metadata: true,
+        useResourceID: this.persistentTableNames,
+        accountPrefix: this.useAccountPrefix ? 'account_' + this.account.rowID : null
+      };
+
+      const {statements} = await PostgresSchema.generateSchemaStatements(account, oldForm, newForm, options);
 
       await this.dropFriendlyView(form, null);
 
@@ -674,11 +718,10 @@ ${ ex.stack }
     const viewName = this.getFriendlyTableName(form, repeatable);
 
     try {
-      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s.%s_view_full;',
+      await this.run(format('CREATE VIEW %s.%s AS SELECT * FROM %s_view_full;',
                             this.escapeIdentifier(this.viewSchema),
                             this.escapeIdentifier(viewName),
-                            this.escapeIdentifier(this.dataSchema),
-                            PostgresRecordValues.tableNameWithForm(form, repeatable)));
+                            PostgresRecordValues.tableNameWithForm(form, repeatable, this.recordValueOptions)));
     } catch (ex) {
       // sometimes it doesn't exist
       this.integrityWarning(ex);
@@ -688,7 +731,9 @@ ${ ex.stack }
   getFriendlyTableName(form, repeatable) {
     const name = compact([form.name, repeatable && repeatable.dataName]).join(' - ')
 
-    const prefix = compact(['view', form.rowID, repeatable && repeatable.key]).join(' - ');
+    const formID = this.persistentTableNames ? form.id : form.rowID;
+
+    const prefix = compact(['view', formID, repeatable && repeatable.key]).join(' - ');
 
     const objectName = [prefix, name].join(' - ');
 
@@ -906,7 +951,7 @@ ${ ex.stack }
     const account = await fulcrum.fetchAccount(fulcrum.args.org);
 
     if (this.tableNames.indexOf('migrations') === -1) {
-      console.log('Inititalizing database...');
+      log('Inititalizing database...');
 
       await this.setupDatabase();
     }
@@ -917,21 +962,30 @@ ${ ex.stack }
   async maybeRunMigrations(account) {
     this.migrations = (await this.run(`SELECT name FROM ${ this.dataSchema }.migrations`)).map(o => o.name);
 
-    await this.maybeRunMigration('002', account);
-    await this.maybeRunMigration('003', account);
-    await this.maybeRunMigration('004', account);
-  }
+    let populateRecords = false;
 
-  async maybeRunMigration(version, account) {
-    if (this.migrations.indexOf(version) === -1 && MIGRATIONS[version]) {
-      await this.run(this.prepareMigrationScript(MIGRATIONS[version]));
+    for (let count = 2; count <= CURRENT_VERSION; ++count) {
+      const version = padStart(count, 3, '0');
 
-      if (version === '002') {
-        console.log('Populating system tables...');
+      const needsMigration = this.migrations.indexOf(version) === -1 && MIGRATIONS[version];
 
-        await this.setupSystemTables(account);
-        await this.populateRecords(account);
+      if (needsMigration) {
+        await this.run(this.prepareMigrationScript(MIGRATIONS[version]));
+
+        if (version === '002') {
+          log('Populating system tables...');
+          await this.setupSystemTables(account);
+          populateRecords = true;
+        }
+        else if (version === '005') {
+          log('Migrating date calculation fields...');
+          await this.migrateCalculatedFieldsDateFormat(account);
+        }
       }
+    }
+
+    if (populateRecords) {
+      await this.populateRecords(account);
     }
   }
 
@@ -952,6 +1006,20 @@ ${ ex.stack }
 
         await this.updateRecord(record, account, false);
       });
+    }
+  }
+
+  async migrateCalculatedFieldsDateFormat(account) {
+    const forms = await account.findActiveForms({});
+
+    for (const form of forms) {
+      const fields = form.elementsOfType('CalculatedField').filter(element => element.display.isDate);
+
+      if (fields.length) {
+        log('Migrating date calculation fields in form...', form.name);
+
+        await this.rebuildForm(form, account, () => {});
+      }
     }
   }
 

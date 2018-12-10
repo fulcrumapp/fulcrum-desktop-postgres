@@ -1,0 +1,61 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = `
+BEGIN TRANSACTION;
+
+CREATE TABLE IF NOT EXISTS __SCHEMA__.system_tables (
+  name text,
+  alias text,
+  type text,
+  parent text,
+  form_id text,
+  field text,
+  field_type text,
+  data_name text
+);
+
+CREATE OR REPLACE VIEW __VIEW_SCHEMA__.tables_view AS
+SELECT name, alias, type, parent, form_id, field, field_type, data_name
+FROM __SCHEMA__.system_tables;
+
+CREATE INDEX idx_tables_name ON __SCHEMA__.system_tables (name);
+
+CREATE INDEX idx_tables_alias ON __SCHEMA__.system_tables (alias);
+
+CREATE INDEX idx_tables_form_id ON __SCHEMA__.system_tables (form_id);
+
+
+
+CREATE TABLE IF NOT EXISTS __SCHEMA__.system_columns (
+  table_name text,
+  table_alias text,
+  name text,
+  ordinal bigint,
+  type text,
+  nullable boolean,
+  form_id text,
+  field text,
+  field_type text,
+  data_name text,
+  part text,
+  data text
+);
+
+CREATE OR REPLACE VIEW __VIEW_SCHEMA__.columns_view AS
+SELECT table_name, name, ordinal, type, nullable, form_id, field, field_type, data_name, part, data
+FROM __SCHEMA__.system_columns;
+
+CREATE INDEX idx_columns_table_name ON __SCHEMA__.system_columns (table_name);
+
+CREATE INDEX idx_columns_table_alias ON __SCHEMA__.system_columns (table_alias);
+
+CREATE INDEX idx_columns_form_id ON __SCHEMA__.system_columns (form_id);
+
+INSERT INTO __SCHEMA__.migrations (name) VALUES ('005');
+
+COMMIT TRANSACTION;
+`;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uL3ZlcnNpb24tMDA1LnNxbC5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7OztrQkFBZ0IiLCJmaWxlIjoidmVyc2lvbi0wMDUuc3FsLmpzIiwic291cmNlc0NvbnRlbnQiOlsiZXhwb3J0IGRlZmF1bHQgYFxuQkVHSU4gVFJBTlNBQ1RJT047XG5cbkNSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIF9fU0NIRU1BX18uc3lzdGVtX3RhYmxlcyAoXG4gIG5hbWUgdGV4dCxcbiAgYWxpYXMgdGV4dCxcbiAgdHlwZSB0ZXh0LFxuICBwYXJlbnQgdGV4dCxcbiAgZm9ybV9pZCB0ZXh0LFxuICBmaWVsZCB0ZXh0LFxuICBmaWVsZF90eXBlIHRleHQsXG4gIGRhdGFfbmFtZSB0ZXh0XG4pO1xuXG5DUkVBVEUgT1IgUkVQTEFDRSBWSUVXIF9fVklFV19TQ0hFTUFfXy50YWJsZXNfdmlldyBBU1xuU0VMRUNUIG5hbWUsIGFsaWFzLCB0eXBlLCBwYXJlbnQsIGZvcm1faWQsIGZpZWxkLCBmaWVsZF90eXBlLCBkYXRhX25hbWVcbkZST00gX19TQ0hFTUFfXy5zeXN0ZW1fdGFibGVzO1xuXG5DUkVBVEUgSU5ERVggaWR4X3RhYmxlc19uYW1lIE9OIF9fU0NIRU1BX18uc3lzdGVtX3RhYmxlcyAobmFtZSk7XG5cbkNSRUFURSBJTkRFWCBpZHhfdGFibGVzX2FsaWFzIE9OIF9fU0NIRU1BX18uc3lzdGVtX3RhYmxlcyAoYWxpYXMpO1xuXG5DUkVBVEUgSU5ERVggaWR4X3RhYmxlc19mb3JtX2lkIE9OIF9fU0NIRU1BX18uc3lzdGVtX3RhYmxlcyAoZm9ybV9pZCk7XG5cblxuXG5DUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBfX1NDSEVNQV9fLnN5c3RlbV9jb2x1bW5zIChcbiAgdGFibGVfbmFtZSB0ZXh0LFxuICB0YWJsZV9hbGlhcyB0ZXh0LFxuICBuYW1lIHRleHQsXG4gIG9yZGluYWwgYmlnaW50LFxuICB0eXBlIHRleHQsXG4gIG51bGxhYmxlIGJvb2xlYW4sXG4gIGZvcm1faWQgdGV4dCxcbiAgZmllbGQgdGV4dCxcbiAgZmllbGRfdHlwZSB0ZXh0LFxuICBkYXRhX25hbWUgdGV4dCxcbiAgcGFydCB0ZXh0LFxuICBkYXRhIHRleHRcbik7XG5cbkNSRUFURSBPUiBSRVBMQUNFIFZJRVcgX19WSUVXX1NDSEVNQV9fLmNvbHVtbnNfdmlldyBBU1xuU0VMRUNUIHRhYmxlX25hbWUsIG5hbWUsIG9yZGluYWwsIHR5cGUsIG51bGxhYmxlLCBmb3JtX2lkLCBmaWVsZCwgZmllbGRfdHlwZSwgZGF0YV9uYW1lLCBwYXJ0LCBkYXRhXG5GUk9NIF9fU0NIRU1BX18uc3lzdGVtX2NvbHVtbnM7XG5cbkNSRUFURSBJTkRFWCBpZHhfY29sdW1uc190YWJsZV9uYW1lIE9OIF9fU0NIRU1BX18uc3lzdGVtX2NvbHVtbnMgKHRhYmxlX25hbWUpO1xuXG5DUkVBVEUgSU5ERVggaWR4X2NvbHVtbnNfdGFibGVfYWxpYXMgT04gX19TQ0hFTUFfXy5zeXN0ZW1fY29sdW1ucyAodGFibGVfYWxpYXMpO1xuXG5DUkVBVEUgSU5ERVggaWR4X2NvbHVtbnNfZm9ybV9pZCBPTiBfX1NDSEVNQV9fLnN5c3RlbV9jb2x1bW5zIChmb3JtX2lkKTtcblxuSU5TRVJUIElOVE8gX19TQ0hFTUFfXy5taWdyYXRpb25zIChuYW1lKSBWQUxVRVMgKCcwMDUnKTtcblxuQ09NTUlUIFRSQU5TQUNUSU9OO1xuYDtcbiJdfQ==
