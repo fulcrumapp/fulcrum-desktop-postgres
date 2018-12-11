@@ -13,6 +13,7 @@ import version002 from './version-002.sql';
 import version003 from './version-003.sql';
 import version004 from './version-004.sql';
 import version005 from './version-005.sql';
+import version006 from './version-006.sql';
 
 const MAX_IDENTIFIER_LENGTH = 63;
 
@@ -28,10 +29,11 @@ const MIGRATIONS = {
   '002': version002,
   '003': version003,
   '004': version004,
-  '005': version005
+  '005': version005,
+  '006': version006
 };
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 const DEFAULT_SCHEMA = 'public';
 
