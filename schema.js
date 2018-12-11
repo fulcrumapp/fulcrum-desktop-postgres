@@ -22,10 +22,10 @@ export default class PostgresSchema {
 
     if (useResourceID) {
       if (oldForm) {
-        oldForm.row_id = oldForm.id;
+        oldForm = {...oldForm, row_id: oldForm.id};
       }
       if (newForm) {
-        newForm.row_id = newForm.id;
+        newForm = {...newForm, row_id: newForm.id};
       }
     }
 

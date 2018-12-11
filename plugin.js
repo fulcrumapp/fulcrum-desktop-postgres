@@ -679,7 +679,7 @@ ${ ex.stack }
         tableSchema: this.dataSchema,
         calculatedFieldDateFormat: 'date',
         metadata: true,
-        useResourceID: this.persistentTableNames,
+        useResourceID: false,
         accountPrefix: this.useAccountPrefix ? 'account_' + this.account.rowID : null
       };
 
