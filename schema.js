@@ -39,7 +39,7 @@ export default class PostgresSchema {
 
     const differ = new SchemaDiffer(oldSchema, newSchema);
 
-    const meta = new Metadata(differ, {quote: '"', schema: tableSchema, prefix: 'system_'});
+    const meta = new Metadata(differ, {quote: '"', schema: tableSchema, prefix: 'system_', useAliases: false});
     const generator = new Postgres(differ, {afterTransform: metadata && meta.build.bind(meta)});
 
     generator.tablePrefix = accountPrefix != null ? accountPrefix + '_' : '';
