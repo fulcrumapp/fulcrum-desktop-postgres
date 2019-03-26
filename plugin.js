@@ -154,6 +154,12 @@ export default class {
           type: 'boolean',
           default: true
         },
+        pgUniqueViews: {
+          desc: 'make sure the views are uniquely identifiable. Disabling this makes the views easier to use, but has limitations when forms are renamed. ONLY use this is you know you will not rename or swap out forms or drastically alter form schemas.',
+          required: false,
+          type: 'boolean',
+          default: true
+        },
         pgSimpleTypes: {
           desc: 'use simple types in the database that are more compatible with other applications (no tsvector, geometry, arrays)',
           required: false,
@@ -269,6 +275,7 @@ export default class {
     // }
 
     this.useAccountPrefix = (fulcrum.args.pgPrefix !== false);
+    this.useUniqueViews = (fulcrum.args.pgUniqueViews !== false);
 
     this.pool = new pg.Pool(options);
 
@@ -737,15 +744,17 @@ ${ ex.stack }
   }
 
   getFriendlyTableName(form, repeatable) {
-    const name = compact([form.name, repeatable && repeatable.dataName]).join(' - ')
+    let name = compact([form.name, repeatable && repeatable.dataName]).join(' - ')
 
-    const formID = this.persistentTableNames ? form.id : form.rowID;
+    if (this.useUniqueViews) {
+      const formID = this.persistentTableNames ? form.id : form.rowID;
 
-    const prefix = compact(['view', formID, repeatable && repeatable.key]).join(' - ');
+      const prefix = compact(['view', formID, repeatable && repeatable.key]).join(' - ');
 
-    const objectName = [prefix, name].join(' - ');
+      name = [prefix, name].join(' - ');
+    }
 
-    return this.trimIdentifier(fulcrum.args.pgUnderscoreNames !== false ? snake(objectName) : objectName);
+    return this.trimIdentifier(fulcrum.args.pgUnderscoreNames !== false ? snake(name) : name);
   }
 
   async invokeBeforeFunction() {
