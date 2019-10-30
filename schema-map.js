@@ -2,6 +2,10 @@ import pgformat from 'pg-format';
 import wkt from 'wellknown';
 import { core } from 'fulcrum';
 
+function toNumber(value) {
+  return value != null && !Array.isArray(value) && !isNaN(+value) && Number.isFinite(+value) ? +value : null;
+}
+
 export default class SchemaMap {
   // * force 2d
   // * remove duplicate vertices
@@ -124,9 +128,9 @@ export default class SchemaMap {
       geometry: hasLocation ? this.geometry(row._latitude, row._longitude) : null,
       latitude: hasLocation ? row._latitude : null,
       longitude: hasLocation ? row._longitude : null,
-      altitude: row._altitude,
-      direction: row._direction,
-      accuracy: row._accuracy,
+      altitude: toNumber(row._altitude),
+      direction: toNumber(row._direction),
+      accuracy: toNumber(row._accuracy),
       width: row._width,
       height: row._height,
       make: row._make,
